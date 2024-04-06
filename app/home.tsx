@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { View } from 'react-native';
+import { FlatList, View } from 'react-native';
 import {
 	Text,
 	Button
@@ -8,24 +8,27 @@ import { useUser } from './providers';
 import { router } from 'expo-router';
 import { useAppDispatch, useAppSelector } from '~/redux/store';
 import { initAndJoinSocketRooms, joinSocketRoom } from '~/redux/socketSlice';
-import { addMessage, joinChatRoom } from '~/redux/chatSlice';
+import { addMessage, clearRoomData, joinChatRoom } from '~/redux/chatSlice';
 import { ChatMessage, TRoomData, TUser } from '~/lib/types';
 import { genRoomId } from '~/lib/utils';
+import RoomDisplayItem from '~/components/RoomDisplayItem';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Room from '~/components/Room';
 
 
 export default function Page() {
-	const { user, isLoading, updateUser} = useUser();
+	const { user, isLoading, updateUser, logout } = useUser();
 	const activeChatRoomId = useAppSelector(state => state.chat.activeChatRoomId);
 	const socket = useAppSelector(state => state.socket.socket);
 	const dispatch = useAppDispatch();
 
 	useEffect(() => {
-		if(!isLoading && !user) {
+		if (!isLoading && !user) {
 			router.replace('/auth');
 			return;
 		}
 
-		if(!user) return;
+		if (!user) return;
 
 		const roomIds: string[] = user.rooms.map(u => u.roomId);
 
@@ -39,7 +42,7 @@ export default function Page() {
 		user.rooms.forEach((roomData) => {
 			dispatch(joinChatRoom(roomData));
 		});
-		
+
 	}, [user, isLoading]);
 
 	useEffect(() => {
@@ -93,10 +96,24 @@ export default function Page() {
 
 	}, [socket]);
 
+	function handleLogoutBtnPress() {
+		dispatch(clearRoomData());
+		logout();
+	}
+
 	return (
-		<View className='flex items-center justify-center min-h-screen flex-col gap-6 bg-gradient-to-r from-blue-500 to-purple-500'>
-			<Text variant='headlineLarge'>Hello {user?.name} </Text>
-			
-		</View>
+		<SafeAreaView>
+			{
+				activeChatRoomId == '' ?
+					<FlatList
+						data={user?.rooms}
+						renderItem={({ item, index }) => <RoomDisplayItem roomData={item} key={index} />}
+					/>
+					:
+					<Room />
+			}
+			{/* <Button onPress={handleLogoutBtnPress}>Logout</Button> */}
+
+		</SafeAreaView>
 	)
 }

@@ -113,12 +113,12 @@ export default function Page() {
 	return (
 		<SafeAreaView>
 			<View className='h-full flex flex-col justify-center items-center gap-4'>
-				<Button className='w-1/2' onPress={authWithGoogle} mode='contained'>{isSignIn ? "Sign In" : "Sign Up"} With Google</Button>
+				{/* <Button className='w-1/2' onPress={authWithGoogle} mode='contained'>{isSignIn ? "Sign In" : "Sign Up"} With Google</Button>
 				<View className='flex flex-row items-center justify-center gap-2'>
 					<View className='bg-primary h-[1px] w-1/3'></View>
 					<Text>OR</Text>
 					<View className='bg-primary h-[1px] w-1/3'></View>
-				</View>
+				</View> */}
 				<TextInput
 					label="Email"
 					value={email}

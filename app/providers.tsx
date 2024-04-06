@@ -4,6 +4,7 @@ import { TAuthUser } from '../lib/types';
 import ReduxProvider from '../redux/redux-provider';
 import { MD3LightTheme as DefaultTheme, PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 
 
 type TUserContext = {
@@ -79,7 +80,7 @@ export function Providers({ children }: { children: ReactNode }) {
 			method: 'DELETE'
 		}).then(res => {
 			setUser(null);
-			//TODO: Go to auth screen
+			router.replace('/auth');
 		})
 	}
 
