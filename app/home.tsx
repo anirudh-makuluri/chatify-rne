@@ -112,7 +112,7 @@ export default function Page() {
 					:
 					<Room />
 			}
-			{/* <Button onPress={handleLogoutBtnPress}>Logout</Button> */}
+			<Button onPress={handleLogoutBtnPress}>Logout</Button>
 
 		</SafeAreaView>
 	)
