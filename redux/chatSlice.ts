@@ -34,6 +34,9 @@ export const chatSlice = createSlice({
 		},
 		addMessage: (state, action: PayloadAction<ChatMessage>) => {
 			const chatMessages = state.rooms[action.payload.roomId].messages;
+
+			if(chatMessages.findIndex(msg => msg.chatId == action.payload.chatId) != -1) return state;
+
 			let lastMessage = chatMessages[chatMessages.length - 1];
 
 			const newChatDate: ChatDate = {

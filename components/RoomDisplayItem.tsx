@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import React from 'react'
 import { View } from 'react-native'
 import { Avatar, Card, Text } from 'react-native-paper'
@@ -15,6 +16,7 @@ export default function RoomDisplayItem({ roomData }: { roomData: TRoomData }) {
 		if(!user) return;
 
 		dispatch(setActiveRoomId(roomData.roomId));
+		router.push('/room')
 	}
 
 	function getLastMessage() {

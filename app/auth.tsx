@@ -9,10 +9,11 @@ import {
 import { useUser } from './providers';
 import { router } from 'expo-router'
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, User, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithRedirect, User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithCredential } from "firebase/auth";
 import { config } from '~/lib/config';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { customFetch } from '~/lib/utils';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 const app = initializeApp(config.firebaseConfig);
 const auth = getAuth(app);
@@ -27,6 +28,12 @@ export default function Page() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [snackbarMsg, setSnackbarMsg] = useState("");
+
+	useEffect(() => {
+		GoogleSignin.configure({
+			webClientId: '1068380641937-faa609ut6ef1mdh126n6l8279gissmr4.apps.googleusercontent.com'
+		});
+	}, []);
 
 	useEffect(() => {
 		if (user && !isLoading) {
@@ -83,8 +90,15 @@ export default function Page() {
 
 	async function authWithGoogle() {
 		try {
-			const { user } = await signInWithRedirect(auth, provider);
+			await GoogleSignin.hasPlayServices();
+			const { idToken } =  await GoogleSignin.signIn();
+			const googleCredential = GoogleAuthProvider.credential(idToken);
+			const userCredentials = await signInWithCredential(auth, googleCredential);
+			const user = userCredentials.user;
 			setSession(user);
+			await GoogleSignin.revokeAccess();
+			await GoogleSignin.signOut();		
+			
 		} catch (error) {
 			console.warn(error);
 			setSnackbarMsg("Error occured while trying to authenticate using google");
@@ -96,7 +110,7 @@ export default function Page() {
 
 		console.log(user);
 
-		const idToken = await user?.getIdToken();
+		const idToken = await user?.getIdToken(true);
 
 		customFetch({
 			pathName: 'session',
@@ -113,12 +127,12 @@ export default function Page() {
 	return (
 		<SafeAreaView>
 			<View className='h-full flex flex-col justify-center items-center gap-4'>
-				{/* <Button className='w-1/2' onPress={authWithGoogle} mode='contained'>{isSignIn ? "Sign In" : "Sign Up"} With Google</Button>
+				<Button className='w-1/2' onPress={authWithGoogle} mode='contained'>{isSignIn ? "Sign In" : "Sign Up"} With Google</Button>
 				<View className='flex flex-row items-center justify-center gap-2'>
 					<View className='bg-primary h-[1px] w-1/3'></View>
 					<Text>OR</Text>
 					<View className='bg-primary h-[1px] w-1/3'></View>
-				</View> */}
+				</View>
 				<TextInput
 					label="Email"
 					value={email}

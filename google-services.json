@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "1068380641937",
+    "project_id": "chitchat-388816",
+    "storage_bucket": "chitchat-388816.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1068380641937:android:378a97002fb1658570fd30",
+        "android_client_info": {
+          "package_name": "com.chatify.chatify"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1068380641937-vmavvn6cv8otvo4pl8clbe1mv8s1ib3f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.chatify.chatify",
+            "certificate_hash": "653f44f8b25faa0d50d153d2a9ff6f0c0a1d41f4"
+          }
+        },
+        {
+          "client_id": "1068380641937-tthsla89okh6stfi2epcjquqfm4b94tl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBL8panCSV0Cuc5UEVUe9SFH7TFjiee9PU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1068380641937-faa609ut6ef1mdh126n6l8279gissmr4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1068380641937-cddi8ssagvdh488rfidbhph6l1n3i13g.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.arm8tron.chitchat"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
