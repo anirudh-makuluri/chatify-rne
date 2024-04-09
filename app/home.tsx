@@ -1,8 +1,7 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { FlatList, View } from 'react-native';
 import {
-	Text,
-	Button
+	BottomNavigation
 } from 'react-native-paper'
 import { useUser } from './providers';
 import { router } from 'expo-router';
@@ -11,16 +10,26 @@ import { initAndJoinSocketRooms, joinSocketRoom } from '~/redux/socketSlice';
 import { addMessage, clearRoomData, joinChatRoom } from '~/redux/chatSlice';
 import { ChatMessage, TRoomData, TUser } from '~/lib/types';
 import { genRoomId } from '~/lib/utils';
-import RoomDisplayItem from '~/components/RoomDisplayItem';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Room from '~/components/Room';
+import RoomList from '~/components/RoomList';
+import Settings from '~/components/Settings';
 
 
 export default function Page() {
 	const { user, isLoading, updateUser, logout } = useUser();
-	const activeChatRoomId = useAppSelector(state => state.chat.activeChatRoomId);
 	const socket = useAppSelector(state => state.socket.socket);
+	const activeChatRoomId = useAppSelector(state => state.chat.activeChatRoomId);
 	const dispatch = useAppDispatch();
+	const [routes] = useState([
+		{ key: 'home', title: 'Home', focusedIcon: 'home', unfocusedIcon: 'home-outline' },
+		{ key: 'settings', title: 'Settings', focusedIcon: 'cog', unfocusedIcon: 'cog-outline' }
+	]);
+	const [index, setIndex] = useState(0);
+
+	const renderScene = BottomNavigation.SceneMap({
+		home: RoomList,
+		settings: Settings,
+	});
+
 
 	useEffect(() => {
 		if (!isLoading && !user) {
@@ -89,31 +98,21 @@ export default function Page() {
 		})
 
 		return () => {
-			socket.off("chat_event_server_to_client");
-			socket.off("send_friend_request_server_to_client")
-			socket.off('respond_friend_request_server_to_client');
+			if(activeChatRoomId != '') return;
+
+			// console.log("Turning off socket listeners");
+			// socket.off("chat_event_server_to_client");
+			// socket.off("send_friend_request_server_to_client")
+			// socket.off('respond_friend_request_server_to_client');
 		}
 
 	}, [socket]);
 
-	function handleLogoutBtnPress() {
-		dispatch(clearRoomData());
-		logout();
-	}
-
 	return (
-		<SafeAreaView>
-			{
-				activeChatRoomId == '' ?
-					<FlatList
-						data={user?.rooms}
-						renderItem={({ item, index }) => <RoomDisplayItem roomData={item} key={index} />}
-					/>
-					:
-					<Room />
-			}
-			<Button onPress={handleLogoutBtnPress}>Logout</Button>
-
-		</SafeAreaView>
+		<BottomNavigation
+			navigationState={{ index, routes }}
+			onIndexChange={setIndex}
+			renderScene={renderScene}
+		/>
 	)
 }
