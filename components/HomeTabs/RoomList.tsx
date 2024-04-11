@@ -1,7 +1,7 @@
 import React from 'react'
 import { FlatList } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import RoomDisplayItem from './RoomDisplayItem'
+import RoomDisplayItem from '../RoomDisplayItem'
 import { useUser } from '~/app/providers'
 
 export default function RoomList() {

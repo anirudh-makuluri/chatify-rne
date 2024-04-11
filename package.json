@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
-    "start": "expo start",
+    "start": "expo start --dev-client",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+	"server": "cd ../chatify-backend |  npm start"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "1.21.0",

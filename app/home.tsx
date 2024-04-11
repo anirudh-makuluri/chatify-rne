@@ -10,8 +10,9 @@ import { initAndJoinSocketRooms, joinSocketRoom } from '~/redux/socketSlice';
 import { addMessage, clearRoomData, joinChatRoom } from '~/redux/chatSlice';
 import { ChatMessage, TRoomData, TUser } from '~/lib/types';
 import { genRoomId } from '~/lib/utils';
-import RoomList from '~/components/RoomList';
-import Settings from '~/components/Settings';
+import RoomList from '~/components/HomeTabs/RoomList';
+import Settings from '~/components/HomeTabs/Settings';
+import Friends from '~/components/HomeTabs/Friends';
 
 
 export default function Page() {
@@ -21,13 +22,16 @@ export default function Page() {
 	const dispatch = useAppDispatch();
 	const [routes] = useState([
 		{ key: 'home', title: 'Home', focusedIcon: 'home', unfocusedIcon: 'home-outline' },
-		{ key: 'settings', title: 'Settings', focusedIcon: 'cog', unfocusedIcon: 'cog-outline' }
+		{ key: 'friends', title: 'Friends', focusedIcon: 'account-multiple-plus', unfocusedIcon: 'account-multiple-plus-outline'  },
+		{ key: 'settings', title: 'Settings', focusedIcon: 'cog', unfocusedIcon: 'cog-outline' },
+		
 	]);
 	const [index, setIndex] = useState(0);
 
 	const renderScene = BottomNavigation.SceneMap({
 		home: RoomList,
-		settings: Settings,
+		friends: Friends,
+		settings: Settings,		
 	});
 
 
