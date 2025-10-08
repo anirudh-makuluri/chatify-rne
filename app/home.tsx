@@ -61,8 +61,13 @@ export default function Page() {
 	useEffect(() => {
 		if (!socket) return;
 
-		socket.on('chat_event_server_to_client', (msg: ChatMessage) => {
-			dispatch(addMessage(msg))
+		socket.on('chat_event_server_to_client', (msg: any) => {
+			// Map backend's 'id' to frontend's 'chatId'
+			const mappedMessage: ChatMessage = {
+				...msg,
+				chatId: msg.id || msg.chatId
+			};
+			dispatch(addMessage(mappedMessage))
 		})
 
 		socket.on('send_friend_request_server_to_client', (data: TUser) => {

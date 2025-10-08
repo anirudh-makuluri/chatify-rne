@@ -1,19 +1,24 @@
 export type ChatMessage = {
-	chatId: number;
+	chatId: number | string;
 	roomId: string;
-	chatDocId?: string
-	type: 'text' | 'image' | 'gif' | 'file';
+	chatDocId?: string;
+	type: 'text' | 'image' | 'gif' | 'file' | 'audio' | 'video';
 	chatInfo: string;
 	fileName?: string;
 	isMsgEdited?: boolean;
 	isMsgSaved?: boolean;
+	reactions?: Array<{
+		id: string;
+		reactors: Array<{ uid: string; name: string }>;
+	}>;
 	userUid: string;
 	userName: string;
 	userPhoto: string;
 	time: any; //TODO: fix
-	isUserInfoDisplayed?: boolean,
-	isConsecutiveMessage?: boolean,
-	isDate?: boolean
+	isUserInfoDisplayed?: boolean;
+	isConsecutiveMessage?: boolean;
+	isDate?: boolean;
+	isAIMessage?: boolean;
 };
 
 export type ChatDate = {
@@ -53,9 +58,12 @@ export type TAuthUser = {
 }
 
 export type TRoomData = {
-	is_group: boolean
-	roomId: string,
-	messages: (ChatMessage | ChatDate)[],
-	name: string,
-	photo_url: string
+	is_group: boolean;
+	roomId: string;
+	messages: (ChatMessage | ChatDate)[];
+	name: string;
+	photo_url: string;
+	currentChatDocId?: string;
+	hasMoreMessages?: boolean;
+	isLoadingMore?: boolean;
 }

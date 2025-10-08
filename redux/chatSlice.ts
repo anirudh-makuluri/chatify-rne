@@ -27,6 +27,9 @@ export const chatSlice = createSlice({
 				name: roomData.name,
 				photo_url: roomData.photo_url,
 				roomId: roomData.roomId,
+				currentChatDocId: roomData.messages[0]?.chatDocId,
+				hasMoreMessages: true,
+				isLoadingMore: false,
 			}
 		},
 		setActiveRoomId: (state, action: PayloadAction<string>) => {
@@ -90,11 +93,59 @@ export const chatSlice = createSlice({
 
 			state.rooms[action.payload.roomId].messages = [...formattedMessages, ...currentMessages];
 		},
+		setLoadingMore: (state, action: PayloadAction<{ roomId: string, isLoading: boolean }>) => {
+			if (state.rooms[action.payload.roomId]) {
+				state.rooms[action.payload.roomId].isLoadingMore = action.payload.isLoading;
+			}
+		},
+		addOlderMessages: (state, action: PayloadAction<{ roomId: string, messages: ChatMessage[], hasMore: boolean }>) => {
+			const { roomId, messages, hasMore } = action.payload;
+			
+			if (!state.rooms[roomId] || messages.length === 0) {
+				if (state.rooms[roomId]) {
+					state.rooms[roomId].hasMoreMessages = false;
+					state.rooms[roomId].isLoadingMore = false;
+				}
+				return;
+			}
+
+			const formattedMessages = formatChatMessages(messages);
+			const currentMessages = state.rooms[roomId].messages;
+
+			// Check if first current message and last new message are on same day
+			if (currentMessages.length > 0 && formattedMessages.length > 0) {
+				const firstCurrentMsg = currentMessages[0]?.isDate ? currentMessages[1] : currentMessages[0];
+				const lastNewMsg = formattedMessages[formattedMessages.length - 1];
+				
+				if (firstCurrentMsg && lastNewMsg && !lastNewMsg.isDate) {
+					const firstMsgDate = new Date(firstCurrentMsg.time);
+					const lastMsgDate = new Date(lastNewMsg.time);
+
+					const isSameDay = firstMsgDate.getDate() === lastMsgDate.getDate() &&
+						firstMsgDate.getMonth() === lastMsgDate.getMonth() &&
+						firstMsgDate.getFullYear() === lastMsgDate.getFullYear();
+
+					if (isSameDay && currentMessages[0]?.isDate) {
+						currentMessages.shift();
+					}
+				}
+			}
+
+			// Prepend older messages
+			state.rooms[roomId].messages = [...formattedMessages, ...currentMessages];
+			
+			// Update pagination state
+			if (messages.length > 0) {
+				state.rooms[roomId].currentChatDocId = messages[0].chatDocId;
+			}
+			state.rooms[roomId].hasMoreMessages = hasMore;
+			state.rooms[roomId].isLoadingMore = false;
+		},
 		clearRoomData: (state) => {
 			state = initialState;
 		}
 	}
 })
 
-export const { setActiveRoomId, addMessage, joinChatRoom, clearRoomData, addChatDoc } = chatSlice.actions
+export const { setActiveRoomId, addMessage, joinChatRoom, clearRoomData, addChatDoc, setLoadingMore, addOlderMessages } = chatSlice.actions
 export const chatReducer = chatSlice.reducer

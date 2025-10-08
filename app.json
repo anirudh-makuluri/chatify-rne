@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "chatify-rne",
+    "name": "Chatify",
     "slug": "chatify-rne",
     "scheme": "chatify-rne",
     "version": "1.0.0",
@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#64ffdb"
     },
     "assetBundlePatterns": [
       "**/*"

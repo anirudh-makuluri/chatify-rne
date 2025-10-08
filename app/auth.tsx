@@ -113,9 +113,9 @@ export default function Page() {
 		const idToken = await user?.getIdToken(true);
 
 		customFetch({
-			pathName: 'session',
-			method: 'POST',
-			body: { idToken }
+				pathName: 'session',
+				method: 'POST',
+				body: { idToken }
 		}).then(res => {
 			auth.signOut();
 			login();

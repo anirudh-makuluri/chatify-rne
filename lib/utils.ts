@@ -19,12 +19,12 @@ export const customFetch = async ({ pathName, method = 'GET', body }: {
 			cache: 'no-store'
 		}
 
-		if (method == 'POST') {
-			requestObj.body = JSON.stringify(body);
-			requestObj.headers = {
-				"Content-Type": "application/json",
-			}
+	if (method == 'POST' || method == 'PUT' || method == 'PATCH') {
+		requestObj.body = JSON.stringify(body);
+		requestObj.headers = {
+			"Content-Type": "application/json",
 		}
+	}
 
 		try {
 			console.log(`${globals.BACKEND_URL}/${pathName}`);

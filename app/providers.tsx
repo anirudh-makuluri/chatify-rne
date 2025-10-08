@@ -51,8 +51,10 @@ export function Providers({ children }: { children: ReactNode }) {
 				}
 			})
 			.catch(error => {
-				console.warn('Error fetching user data:', error);
-			}).finally(() => {
+				console.warn('No valid session found:', error);
+				// User will stay null and be redirected to auth
+			})
+			.finally(() => {
 				setLoading(false);
 			})
 	}
@@ -77,8 +79,13 @@ export function Providers({ children }: { children: ReactNode }) {
 	function logout() {
 		customFetch({
 			pathName: 'session',
-			method: 'DELETE'
 		}).then(res => {
+			console.log('Logged out:', res);
+			setUser(null);
+			router.replace('/auth');
+		}).catch(error => {
+			console.error('Logout error:', error);
+			// Still clear user locally even if backend call fails
 			setUser(null);
 			router.replace('/auth');
 		})

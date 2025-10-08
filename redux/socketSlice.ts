@@ -62,6 +62,46 @@ export const initAndJoinSocketRooms = (rooms: string[], user: TUser): AppThunk =
 export const sendMessageToServer = (message: ChatMessage): AppThunk => (dispatch, getState) => {
 	const { socket } = getState().socket;
 	if (socket) {
-		socket.emit('chat_event_client_to_server', message);
+		// Map chatId to id for backend compatibility
+		const backendMessage = {
+			id: message.chatId,
+			roomId: message.roomId,
+			userUid: message.userUid,
+			userName: message.userName,
+			userPhoto: message.userPhoto,
+			type: message.type,
+			chatInfo: message.chatInfo,
+			fileName: message.fileName || '',
+			isMsgEdited: message.isMsgEdited || false,
+			isMsgSaved: message.isMsgSaved || false
+		};
+		socket.emit('chat_event_client_to_server', backendMessage);
 	}
+};
+
+export const loadChatHistory = (roomId: string, currentChatDocId?: string): AppThunk => (dispatch, getState) => {
+	const { socket } = getState().socket;
+	if (!socket) return;
+
+	socket.emit('load_chat_doc_from_db', {
+		roomId,
+		curChatDocId: currentChatDocId
+	}, (response: any) => {
+		if (response.success && response.chat_history) {
+			// Map backend's 'id' to frontend's 'chatId'
+			const messages = response.chat_history.map((msg: any) => ({
+				...msg,
+				chatId: msg.id || msg.chatId
+			}));
+			const hasMore = messages.length > 0;
+			
+			// Import the action from chatSlice
+			const { addOlderMessages } = require('./chatSlice');
+			dispatch(addOlderMessages({ roomId, messages, hasMore }));
+		} else {
+			// No more messages
+			const { addOlderMessages } = require('./chatSlice');
+			dispatch(addOlderMessages({ roomId, messages: [], hasMore: false }));
+		}
+	});
 };

@@ -1,10 +1,10 @@
 import React, { useRef, useState } from 'react'
 import { FlatList, Image, View } from 'react-native'
-import { Avatar, Button, Card, Text, TextInput, useTheme, Icon } from 'react-native-paper'
+import { Avatar, Button, Card, Text, TextInput, useTheme, Icon, ActivityIndicator } from 'react-native-paper'
 import { useUser } from '~/app/providers';
 import { ChatMessage } from '~/lib/types';
-import { setActiveRoomId } from '~/redux/chatSlice';
-import { sendMessageToServer } from '~/redux/socketSlice';
+import { setActiveRoomId, setLoadingMore } from '~/redux/chatSlice';
+import { sendMessageToServer, loadChatHistory } from '~/redux/socketSlice';
 import { useAppDispatch, useAppSelector } from '~/redux/store';
 import ChatBubble from '../components/ChatBubble';
 import { router } from 'expo-router';
@@ -29,15 +29,26 @@ export default function Room() {
 			return;
 		}
 
+		// Generate UUID v4-like ID
+		const generateId = () => {
+			return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+				const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+				return v.toString(16);
+			});
+		};
+
 		const chatMessage: ChatMessage = {
-			chatId: (Date.now() * Math.floor(Math.random() * 1000)),
+			chatId: generateId(),
 			roomId: activeChatRoomId,
 			type: 'text',
 			chatInfo: input,
 			userUid: user.uid,
 			userName: user.name,
 			userPhoto: user.photo_url,
-			time: new Date()
+			time: new Date(),
+			isMsgEdited: false,
+			isMsgSaved: false,
+			fileName: ''
 		}
 
 		dispatch(sendMessageToServer(chatMessage))
@@ -49,6 +60,29 @@ export default function Room() {
 		router.back();
 		dispatch(setActiveRoomId(''));
 	}
+
+	const handleLoadMore = () => {
+		if (!activeRoom.hasMoreMessages || activeRoom.isLoadingMore) return;
+		
+		dispatch(setLoadingMore({ roomId: activeChatRoomId, isLoading: true }));
+		dispatch(loadChatHistory(activeChatRoomId, activeRoom.currentChatDocId));
+	};
+
+	const renderListHeader = () => {
+		if (!activeRoom.hasMoreMessages) return null;
+		
+		return (
+			<View className='py-4 flex items-center justify-center'>
+				{activeRoom.isLoadingMore ? (
+					<ActivityIndicator size="small" />
+				) : (
+					<Button mode="text" onPress={handleLoadMore}>
+						Load More Messages
+					</Button>
+				)}
+			</View>
+		);
+	};
 
 	return (
 		<SafeAreaView>
@@ -63,7 +97,8 @@ export default function Room() {
 				<FlatList
 					data={activeRoom.messages}
 					renderItem={({ item }) => <ChatBubble message={item} isGroup={activeRoom.is_group} />}
-
+					ListHeaderComponent={renderListHeader}
+					inverted={false}
 				/>
 				<View className='flex flex-col w-full gap-4'>
 					<TextInput ref={textInputRef} value={input} onChangeText={(e) => setInput(e)} />
