@@ -64,7 +64,7 @@ export const sendMessageToServer = (message: ChatMessage): AppThunk => (dispatch
 	if (socket) {
 		// Map chatId to id for backend compatibility
 		const backendMessage = {
-			id: message.chatId,
+			id: message.id,
 			roomId: message.roomId,
 			userUid: message.userUid,
 			userName: message.userName,
@@ -88,10 +88,10 @@ export const loadChatHistory = (roomId: string, currentChatDocId?: string): AppT
 		curChatDocId: currentChatDocId
 	}, (response: any) => {
 		if (response.success && response.chat_history) {
-			// Map backend's 'id' to frontend's 'chatId'
+			// Backend sends 'id', which we use directly
 			const messages = response.chat_history.map((msg: any) => ({
 				...msg,
-				chatId: msg.id || msg.chatId
+				id: msg.id
 			}));
 			const hasMore = messages.length > 0;
 			
@@ -102,6 +102,43 @@ export const loadChatHistory = (roomId: string, currentChatDocId?: string): AppT
 			// No more messages
 			const { addOlderMessages } = require('./chatSlice');
 			dispatch(addOlderMessages({ roomId, messages: [], hasMore: false }));
+		}
+	});
+};
+
+export const editMessage = (params: {
+	id: string;
+	chatDocId: string;
+	roomId: string;
+	newText: string;
+}): AppThunk => (dispatch, getState) => {
+	const { socket } = getState().socket;
+	if (!socket) return;
+
+	console.log('Editing message:', params);
+
+	socket.emit('chat_edit_client_to_server', params, (response: any) => {
+		if (response.success) {
+			console.log('Message edited successfully:', response);
+		} else {
+			console.error('Failed to edit message:', response);
+		}
+	});
+};
+
+export const deleteMessage = (params: {
+	id: string;
+	chatDocId: string;
+	roomId: string;
+}): AppThunk => (dispatch, getState) => {
+	const { socket } = getState().socket;
+	if (!socket) return;
+
+	socket.emit('chat_delete_client_to_server', params, (response: any) => {
+		if (response.success) {
+			console.log('Message deleted successfully:', response);
+		} else {
+			console.error('Failed to delete message:', response);
 		}
 	});
 };

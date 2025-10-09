@@ -35,10 +35,11 @@ export const chatSlice = createSlice({
 		setActiveRoomId: (state, action: PayloadAction<string>) => {
 			state.activeChatRoomId = action.payload
 		},
-		addMessage: (state, action: PayloadAction<ChatMessage>) => {
-			const chatMessages = state.rooms[action.payload.roomId].messages;
+	addMessage: (state, action: PayloadAction<ChatMessage>) => {
+		const chatMessages = state.rooms[action.payload.roomId].messages;
 
-			if(chatMessages.findIndex(msg => msg.chatId == action.payload.chatId) != -1) return state;
+		// Check for duplicates using id
+		if(chatMessages.findIndex(msg => !msg.isDate && msg.id == action.payload.id) != -1) return state;
 
 			let lastMessage = chatMessages[chatMessages.length - 1];
 
@@ -143,9 +144,48 @@ export const chatSlice = createSlice({
 		},
 		clearRoomData: (state) => {
 			state = initialState;
+		},
+	editMessageInChat: (state, action: PayloadAction<{ roomId: string; id: string; chatDocId: string; newText: string }>) => {
+		const { roomId, id, newText } = action.payload;
+		
+		if (!state.rooms[roomId]) return;
+		
+		const messages = state.rooms[roomId].messages;
+		// Search by id
+		const messageIndex = messages.findIndex(msg => !msg.isDate && String(msg.id) === String(id));
+		
+		if (messageIndex !== -1 && !messages[messageIndex].isDate) {
+			const message = messages[messageIndex];
+			if (!message.isDate) {
+				message.chatInfo = newText;
+				message.isMsgEdited = true;
+			}
 		}
+	},
+	deleteMessageFromChat: (state, action: PayloadAction<{ roomId: string; id: string; chatDocId: string }>) => {
+		const { roomId, id } = action.payload;
+		
+		if (!state.rooms[roomId]) return;
+		
+		const messages = state.rooms[roomId].messages;
+		// Search by id
+		const messageIndex = messages.findIndex(msg => !msg.isDate && String(msg.id) === String(id));
+		
+		if (messageIndex !== -1) {
+			// Remove the message
+			messages.splice(messageIndex, 1);
+			
+			// Check if we need to remove orphaned date separator
+			if (messageIndex > 0 && messages[messageIndex - 1]?.isDate) {
+				// If the next message is also a date or doesn't exist, remove the date separator
+				if (!messages[messageIndex] || messages[messageIndex]?.isDate) {
+					messages.splice(messageIndex - 1, 1);
+				}
+			}
+		}
+	}
 	}
 })
 
-export const { setActiveRoomId, addMessage, joinChatRoom, clearRoomData, addChatDoc, setLoadingMore, addOlderMessages } = chatSlice.actions
+export const { setActiveRoomId, addMessage, joinChatRoom, clearRoomData, addChatDoc, setLoadingMore, addOlderMessages, editMessageInChat, deleteMessageFromChat } = chatSlice.actions
 export const chatReducer = chatSlice.reducer

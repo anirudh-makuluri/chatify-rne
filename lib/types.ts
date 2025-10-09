@@ -1,5 +1,5 @@
 export type ChatMessage = {
-	chatId: number | string;
+	id: number | string;
 	roomId: string;
 	chatDocId?: string;
 	type: 'text' | 'image' | 'gif' | 'file' | 'audio' | 'video';
@@ -22,7 +22,7 @@ export type ChatMessage = {
 };
 
 export type ChatDate = {
-	chatId?: undefined;
+	id?: undefined;
 	roomId?: undefined;
 	chatDocId?: undefined
 	type?: undefined;

@@ -7,7 +7,7 @@ import { useUser } from './providers';
 import { router } from 'expo-router';
 import { useAppDispatch, useAppSelector } from '~/redux/store';
 import { initAndJoinSocketRooms, joinSocketRoom } from '~/redux/socketSlice';
-import { addMessage, clearRoomData, joinChatRoom } from '~/redux/chatSlice';
+import { addMessage, clearRoomData, joinChatRoom, editMessageInChat, deleteMessageFromChat } from '~/redux/chatSlice';
 import { ChatMessage, TRoomData, TUser } from '~/lib/types';
 import { genRoomId } from '~/lib/utils';
 import RoomList from '~/components/HomeTabs/RoomList';
@@ -61,14 +61,14 @@ export default function Page() {
 	useEffect(() => {
 		if (!socket) return;
 
-		socket.on('chat_event_server_to_client', (msg: any) => {
-			// Map backend's 'id' to frontend's 'chatId'
-			const mappedMessage: ChatMessage = {
-				...msg,
-				chatId: msg.id || msg.chatId
-			};
-			dispatch(addMessage(mappedMessage))
-		})
+	socket.on('chat_event_server_to_client', (msg: any) => {
+		// Backend sends 'id', which we use directly
+		const mappedMessage: ChatMessage = {
+			...msg,
+			id: msg.id
+		};
+		dispatch(addMessage(mappedMessage))
+	})
 
 		socket.on('send_friend_request_server_to_client', (data: TUser) => {
 			console.log("Received friend request from " + data.name);
@@ -104,6 +104,25 @@ export default function Page() {
 				friend_list: friendList,
 				rooms
 			})
+		})
+
+		socket.on('chat_edit_server_to_client', (data: any) => {
+			console.log('Message edited by another user:', data);
+			dispatch(editMessageInChat({
+				roomId: data.roomId,
+				id: data.id,
+				chatDocId: data.chatDocId,
+				newText: data.newText
+			}));
+		})
+
+		socket.on('chat_delete_server_to_client', (data: any) => {
+			console.log('Message deleted by another user:', data);
+			dispatch(deleteMessageFromChat({
+				roomId: data.roomId,
+				id: data.id,
+				chatDocId: data.chatDocId
+			}));
 		})
 
 		return () => {

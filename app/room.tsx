@@ -38,7 +38,7 @@ export default function Room() {
 		};
 
 		const chatMessage: ChatMessage = {
-			chatId: generateId(),
+			id: generateId(),
 			roomId: activeChatRoomId,
 			type: 'text',
 			chatInfo: input,
@@ -96,7 +96,7 @@ export default function Room() {
 				</View>
 				<FlatList
 					data={activeRoom.messages}
-					renderItem={({ item }) => <ChatBubble message={item} isGroup={activeRoom.is_group} />}
+					renderItem={({ item }) => <ChatBubble message={item} isGroup={activeRoom.is_group} roomId={activeChatRoomId}/>}
 					ListHeaderComponent={renderListHeader}
 					inverted={false}
 				/>
