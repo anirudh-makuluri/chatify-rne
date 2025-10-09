@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
-import { View, Pressable } from 'react-native';
-import { Avatar, Text, Menu, Portal, Dialog, Button, TextInput } from 'react-native-paper';
+import { View, Pressable, ScrollView } from 'react-native';
+import { Avatar, Text, Menu, Portal, Dialog, Button, TextInput, Chip } from 'react-native-paper';
 import { useUser } from '~/app/providers';
 import { ChatDate, ChatMessage } from '~/lib/types';
 import { useAppDispatch } from '~/redux/store';
-import { editMessage, deleteMessage } from '~/redux/socketSlice';
-import { editMessageInChat, deleteMessageFromChat } from '~/redux/chatSlice';
+import { editMessage, deleteMessage, addReaction } from '~/redux/socketSlice';
+import { editMessageInChat, deleteMessageFromChat, toggleReaction } from '~/redux/chatSlice';
 
 export default function ChatBubble({ message, isGroup, roomId }: { message: ChatMessage | ChatDate, isGroup: boolean, roomId: string }) {
 	const user = useUser()?.user;
@@ -14,7 +14,11 @@ export default function ChatBubble({ message, isGroup, roomId }: { message: Chat
 	const [menuVisible, setMenuVisible] = useState(false);
 	const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
 	const [editDialogVisible, setEditDialogVisible] = useState(false);
+	const [emojiPickerVisible, setEmojiPickerVisible] = useState(false);
 	const [editText, setEditText] = useState('');
+
+	// Common emojis for quick reactions
+	const commonEmojis = ['👍', '❤️', '😂', '😮', '😢', '🙏', '🎉', '🔥'];
 
 	if (message.isDate) {
 		return (
@@ -42,22 +46,48 @@ export default function ChatBubble({ message, isGroup, roomId }: { message: Chat
 		closeMenu();
 	};
 
+	const handleReactPress = () => {
+		setEmojiPickerVisible(true);
+		closeMenu();
+	};
+
+	const handleEmojiSelect = (emoji: string) => {
+		if (!user || !message.chatDocId) return;
+
+		// Only emit to server - server will broadcast back to everyone including us
+		dispatch(addReaction({
+			reactionId: emoji,
+			id: String(message.id),
+			chatDocId: message.chatDocId,
+			roomId: roomId,
+			userUid: user.uid,
+			userName: user.name
+		}));
+
+		setEmojiPickerVisible(false);
+	};
+
+	const handleReactionClick = (emoji: string) => {
+		if (!user || !message.chatDocId) return;
+
+		// Emit to server
+		dispatch(addReaction({
+			reactionId: emoji,
+			id: String(message.id),
+			chatDocId: message.chatDocId,
+			roomId: roomId,
+			userUid: user.uid,
+			userName: user.name
+		}));
+	};
+
 	const confirmEdit = () => {
 		if (editText.trim() && message.chatDocId) {
-			// Emit to server
-			console.log('Editing message:', message);
+			// Only emit to server - server will broadcast back to everyone including us
 			dispatch(editMessage({
 				id: String(message.id),
 				chatDocId: message.chatDocId,
 				roomId: roomId,
-				newText: editText
-			}));
-
-			// Update locally
-			dispatch(editMessageInChat({
-				roomId: roomId,
-				id: String(message.id),
-				chatDocId: message.chatDocId,
 				newText: editText
 			}));
 		}
@@ -67,18 +97,11 @@ export default function ChatBubble({ message, isGroup, roomId }: { message: Chat
 
 	const confirmDelete = () => {
 		if (message.chatDocId) {
-			// Emit to server
+			// Only emit to server - server will broadcast back to everyone including us
 			dispatch(deleteMessage({
 				id: String(message.id),
 				chatDocId: message.chatDocId,
 				roomId: roomId
-			}));
-
-			// Update locally
-			dispatch(deleteMessageFromChat({
-				roomId: roomId,
-				id: String(message.id),
-				chatDocId: message.chatDocId
 			}));
 		}
 		setDeleteDialogVisible(false);
@@ -101,7 +124,7 @@ export default function ChatBubble({ message, isGroup, roomId }: { message: Chat
 						onDismiss={closeMenu}
 						anchor={
 							<Pressable 
-								onLongPress={isSelf ? openMenu : undefined}
+								onLongPress={openMenu}
 								delayLongPress={500}
 							>
 								<View className={(isSelf
@@ -121,9 +144,30 @@ export default function ChatBubble({ message, isGroup, roomId }: { message: Chat
 							</Pressable>
 						}
 					>
-						<Menu.Item onPress={handleEditPress} title="Edit" leadingIcon="pencil" />
-						<Menu.Item onPress={handleDeletePress} title="Delete" leadingIcon="delete" />
+						<Menu.Item onPress={handleReactPress} title="React" leadingIcon="emoticon-happy-outline" />
+						{isSelf && <Menu.Item onPress={handleEditPress} title="Edit" leadingIcon="pencil" />}
+						{isSelf && <Menu.Item onPress={handleDeletePress} title="Delete" leadingIcon="delete" />}
 					</Menu>
+					
+					{/* Display reactions */}
+					{!message.isDate && (message as ChatMessage).reactions && (message as ChatMessage).reactions!.length > 0 && (
+						<View className='flex flex-row flex-wrap gap-1 mt-1 ml-5'>
+							{(message as ChatMessage).reactions!.map((reaction: any, index: number) => {
+								const hasUserReacted = reaction.reactors.some((r: any) => r.uid === user?.uid);
+								return (
+									<Pressable key={index} onPress={() => handleReactionClick(reaction.id)}>
+										<Chip
+											mode={hasUserReacted ? 'flat' : 'outlined'}
+											compact
+											style={{ height: 28 }}
+										>
+											{reaction.id} {reaction.reactors.length}
+										</Chip>
+									</Pressable>
+								);
+							})}
+						</View>
+					)}
 				</View>
 			</View>
 
@@ -157,6 +201,27 @@ export default function ChatBubble({ message, isGroup, roomId }: { message: Chat
 					<Dialog.Actions>
 						<Button onPress={() => setDeleteDialogVisible(false)}>Cancel</Button>
 						<Button onPress={confirmDelete} textColor="red">Delete</Button>
+					</Dialog.Actions>
+				</Dialog>
+			</Portal>
+
+			{/* Emoji Picker Dialog */}
+			<Portal>
+				<Dialog visible={emojiPickerVisible} onDismiss={() => setEmojiPickerVisible(false)}>
+					<Dialog.Title>React with Emoji</Dialog.Title>
+					<Dialog.Content>
+						<View className='flex flex-row flex-wrap gap-2 justify-center'>
+							{commonEmojis.map((emoji, index) => (
+								<Pressable key={index} onPress={() => handleEmojiSelect(emoji)}>
+									<View className='p-3 bg-slate-100 rounded-lg'>
+										<Text style={{ fontSize: 32 }}>{emoji}</Text>
+									</View>
+								</Pressable>
+							))}
+						</View>
+					</Dialog.Content>
+					<Dialog.Actions>
+						<Button onPress={() => setEmojiPickerVisible(false)}>Cancel</Button>
 					</Dialog.Actions>
 				</Dialog>
 			</Portal>

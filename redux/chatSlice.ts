@@ -162,30 +162,79 @@ export const chatSlice = createSlice({
 			}
 		}
 	},
-	deleteMessageFromChat: (state, action: PayloadAction<{ roomId: string; id: string; chatDocId: string }>) => {
-		const { roomId, id } = action.payload;
-		
-		if (!state.rooms[roomId]) return;
-		
-		const messages = state.rooms[roomId].messages;
-		// Search by id
-		const messageIndex = messages.findIndex(msg => !msg.isDate && String(msg.id) === String(id));
-		
-		if (messageIndex !== -1) {
-			// Remove the message
-			messages.splice(messageIndex, 1);
+		deleteMessageFromChat: (state, action: PayloadAction<{ roomId: string; id: string; chatDocId: string }>) => {
+			const { roomId, id } = action.payload;
 			
-			// Check if we need to remove orphaned date separator
-			if (messageIndex > 0 && messages[messageIndex - 1]?.isDate) {
-				// If the next message is also a date or doesn't exist, remove the date separator
-				if (!messages[messageIndex] || messages[messageIndex]?.isDate) {
-					messages.splice(messageIndex - 1, 1);
+			if (!state.rooms[roomId]) return;
+			
+			const messages = state.rooms[roomId].messages;
+			// Search by id
+			const messageIndex = messages.findIndex(msg => !msg.isDate && String(msg.id) === String(id));
+			
+			if (messageIndex !== -1) {
+				// Remove the message
+				messages.splice(messageIndex, 1);
+				
+				// Check if we need to remove orphaned date separator
+				if (messageIndex > 0 && messages[messageIndex - 1]?.isDate) {
+					// If the next message is also a date or doesn't exist, remove the date separator
+					if (!messages[messageIndex] || messages[messageIndex]?.isDate) {
+						messages.splice(messageIndex - 1, 1);
+					}
+				}
+			}
+		},
+		toggleReaction: (state, action: PayloadAction<{ roomId: string; id: string; reactionId: string; userUid: string; userName: string }>) => {
+			const { roomId, id, reactionId, userUid, userName } = action.payload;
+			
+			if (!state.rooms[roomId]) return;
+			
+			const messages = state.rooms[roomId].messages;
+			const messageIndex = messages.findIndex(msg => !msg.isDate && String(msg.id) === String(id));
+			
+			if (messageIndex !== -1) {
+				const messageItem = messages[messageIndex];
+				// Type guard to ensure it's a ChatMessage
+				if (messageItem.isDate) return;
+				
+				const message = messageItem as ChatMessage;
+				
+				// Initialize reactions array if it doesn't exist
+				if (!message.reactions) {
+					message.reactions = [];
+				}
+				
+				// Find if this reaction already exists
+				const reactionIndex = message.reactions.findIndex((r: any) => r.id === reactionId);
+				
+				if (reactionIndex !== -1) {
+					// Reaction exists, check if user already reacted
+					const reaction = message.reactions[reactionIndex];
+					const reactorIndex = reaction.reactors.findIndex((r: any) => r.uid === userUid);
+					
+					if (reactorIndex !== -1) {
+						// User already reacted, remove their reaction
+						reaction.reactors.splice(reactorIndex, 1);
+						
+						// If no reactors left, remove the entire reaction
+						if (reaction.reactors.length === 0) {
+							message.reactions.splice(reactionIndex, 1);
+						}
+					} else {
+						// User hasn't reacted yet, add them
+						reaction.reactors.push({ uid: userUid, name: userName });
+					}
+				} else {
+					// Reaction doesn't exist, create it
+					message.reactions.push({
+						id: reactionId,
+						reactors: [{ uid: userUid, name: userName }]
+					});
 				}
 			}
 		}
 	}
-	}
 })
 
-export const { setActiveRoomId, addMessage, joinChatRoom, clearRoomData, addChatDoc, setLoadingMore, addOlderMessages, editMessageInChat, deleteMessageFromChat } = chatSlice.actions
+export const { setActiveRoomId, addMessage, joinChatRoom, clearRoomData, addChatDoc, setLoadingMore, addOlderMessages, editMessageInChat, deleteMessageFromChat, toggleReaction } = chatSlice.actions
 export const chatReducer = chatSlice.reducer

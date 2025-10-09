@@ -7,7 +7,7 @@ import { useUser } from './providers';
 import { router } from 'expo-router';
 import { useAppDispatch, useAppSelector } from '~/redux/store';
 import { initAndJoinSocketRooms, joinSocketRoom } from '~/redux/socketSlice';
-import { addMessage, clearRoomData, joinChatRoom, editMessageInChat, deleteMessageFromChat } from '~/redux/chatSlice';
+import { addMessage, clearRoomData, joinChatRoom, editMessageInChat, deleteMessageFromChat, toggleReaction } from '~/redux/chatSlice';
 import { ChatMessage, TRoomData, TUser } from '~/lib/types';
 import { genRoomId } from '~/lib/utils';
 import RoomList from '~/components/HomeTabs/RoomList';
@@ -116,14 +116,25 @@ export default function Page() {
 			}));
 		})
 
-		socket.on('chat_delete_server_to_client', (data: any) => {
-			console.log('Message deleted by another user:', data);
-			dispatch(deleteMessageFromChat({
-				roomId: data.roomId,
-				id: data.id,
-				chatDocId: data.chatDocId
-			}));
-		})
+	socket.on('chat_delete_server_to_client', (data: any) => {
+		console.log('Message deleted by another user:', data);
+		dispatch(deleteMessageFromChat({
+			roomId: data.roomId,
+			id: data.id,
+			chatDocId: data.chatDocId
+		}));
+	})
+
+	socket.on('chat_reaction_server_to_client', (data: any) => {
+		console.log('Reaction added/removed by another user:', data);
+		dispatch(toggleReaction({
+			roomId: data.roomId,
+			id: data.id,
+			reactionId: data.reactionId,
+			userUid: data.userUid,
+			userName: data.userName
+		}));
+	})
 
 		return () => {
 			if(activeChatRoomId != '') return;

@@ -142,3 +142,23 @@ export const deleteMessage = (params: {
 		}
 	});
 };
+
+export const addReaction = (params: {
+	reactionId: string;
+	id: string;
+	chatDocId: string;
+	roomId: string;
+	userUid: string;
+	userName: string;
+}): AppThunk => (dispatch, getState) => {
+	const { socket } = getState().socket;
+	if (!socket) return;
+
+	socket.emit('chat_reaction_client_to_server', params, (response: any) => {
+		if (response.success) {
+			console.log('Reaction added/removed successfully:', response);
+		} else {
+			console.error('Failed to add/remove reaction:', response);
+		}
+	});
+};
