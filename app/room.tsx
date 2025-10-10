@@ -75,50 +75,48 @@ export default function Room() {
 
 	const pickImage = async () => {
 		setAttachMenuVisible(false);
-		Alert.alert('Coming soon', 'File sharing will work after native build completes!');
-		// const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-		// if (status !== 'granted') {
-		// 	Alert.alert('Permission needed', 'Please grant camera roll permissions');
-		// 	return;
-		// }
-		// const result = await ImagePicker.launchImageLibraryAsync({
-		// 	mediaTypes: ImagePicker.MediaTypeOptions.All,
-		// 	quality: 0.8,
-		// 	allowsEditing: false,
-		// });
-		// if (!result.canceled && result.assets[0]) {
-		// 	handleFileUpload(result.assets[0].uri, result.assets[0].fileName || 'image.jpg', 'image');
-		// }
+		const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+		if (status !== 'granted') {
+			Alert.alert('Permission needed', 'Please grant camera roll permissions');
+			return;
+		}
+		const result = await ImagePicker.launchImageLibraryAsync({
+			mediaTypes: ImagePicker.MediaTypeOptions.All,
+			quality: 0.8,
+			allowsEditing: false,
+		});
+		if (!result.canceled && result.assets[0]) {
+			handleFileUpload(result.assets[0].uri, result.assets[0].fileName || 'image.jpg', 'image');
+		}
 	};
 
 	const takePhoto = async () => {
 		setAttachMenuVisible(false);
-		// Alert.alert('Coming soon', 'File sharing will work after native build completes!');
-		// const { status } = await ImagePicker.requestCameraPermissionsAsync();
-		// if (status !== 'granted') {
-		// 	Alert.alert('Permission needed', 'Please grant camera permissions');
-		// 	return;
-		// }
-		// const result = await ImagePicker.launchCameraAsync({
-		// 	quality: 0.8,
-		// 	allowsEditing: false,
-		// });
-		// if (!result.canceled && result.assets[0]) {
-		// 	handleFileUpload(result.assets[0].uri, 'photo.jpg', 'image');
-		// }
+		const { status } = await ImagePicker.requestCameraPermissionsAsync();
+		if (status !== 'granted') {
+			Alert.alert('Permission needed', 'Please grant camera permissions');
+			return;
+		}
+		const result = await ImagePicker.launchCameraAsync({
+			quality: 0.8,
+			allowsEditing: false,
+		});
+		if (!result.canceled && result.assets[0]) {
+			handleFileUpload(result.assets[0].uri, 'photo.jpg', 'image');
+		}
 	};
 
 	const pickDocument = async () => {
 		setAttachMenuVisible(false);
-		Alert.alert('Coming soon', 'File sharing will work after native build completes!');
-		// const result = await DocumentPicker.getDocumentAsync({
-		// 	type: '*/*',
-		// 	copyToCacheDirectory: true,
-		// });
-		// if (!result.canceled && result.assets[0]) {
-		// 	const file = result.assets[0];
-		// 	handleFileUpload(file.uri, file.name, 'file');
-		// }
+	
+		const result = await DocumentPicker.getDocumentAsync({
+			type: '*/*',
+			copyToCacheDirectory: true,
+		});
+		if (!result.canceled && result.assets[0]) {
+			const file = result.assets[0];
+			handleFileUpload(file.uri, file.name, 'file');
+		}
 	};
 
 	const handleFileUpload = async (uri: string, fileName: string, type: 'image' | 'file') => {

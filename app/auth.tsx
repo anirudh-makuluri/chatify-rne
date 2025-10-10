@@ -31,7 +31,7 @@ export default function Page() {
 
 	useEffect(() => {
 		GoogleSignin.configure({
-			webClientId: '1068380641937-faa609ut6ef1mdh126n6l8279gissmr4.apps.googleusercontent.com'
+			webClientId: '1068380641937-tthsla89okh6stfi2epcjquqfm4b94tl.apps.googleusercontent.com'
 		});
 	}, []);
 
@@ -99,8 +99,8 @@ export default function Page() {
 			await GoogleSignin.revokeAccess();
 			await GoogleSignin.signOut();		
 			
-		} catch (error) {
-			console.warn(error);
+		} catch (error : any) {
+			console.warn('Google Sign-In error:', { code: error.code, message: error.message, native: error });
 			setSnackbarMsg("Error occured while trying to authenticate using google");
 		}
 	}
