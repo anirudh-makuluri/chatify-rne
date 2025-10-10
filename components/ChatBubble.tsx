@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { View, Pressable, ScrollView } from 'react-native';
-import { Avatar, Text, Menu, Portal, Dialog, Button, TextInput, Chip } from 'react-native-paper';
+import { View, Pressable, ScrollView, Image, Linking } from 'react-native';
+import { Avatar, Text, Menu, Portal, Dialog, Button, TextInput, Chip, Card } from 'react-native-paper';
 import { useUser } from '~/app/providers';
 import { ChatDate, ChatMessage } from '~/lib/types';
 import { useAppDispatch } from '~/redux/store';
@@ -135,7 +135,32 @@ export default function ChatBubble({ message, isGroup, roomId }: { message: Chat
 										? 'bg-slate-200 ml-5' :
 										'bg-slate-200 ml-5 rounded-tl-none'))
 									+ " py-2 px-4 rounded-md"}>
-									<Text>{message.chatInfo}</Text>
+									
+									{/* Image */}
+									{message.type === 'image' && (
+										<Image 
+											source={{ uri: message.chatInfo }}
+											style={{ width: 200, height: 200, borderRadius: 8, marginBottom: 4 }}
+											resizeMode="cover"
+										/>
+									)}
+									
+									{/* File attachment */}
+									{message.type === 'file' && (
+										<Pressable onPress={() => Linking.openURL(message.chatInfo)}>
+											<View className='flex flex-row items-center gap-2 p-2 bg-white/20 rounded'>
+												<Avatar.Icon size={36} icon="file-document" />
+												<View className='flex-1'>
+													<Text className='font-medium'>{message.fileName || 'Document'}</Text>
+													<Text className='text-xs opacity-70'>Tap to open</Text>
+												</View>
+											</View>
+										</Pressable>
+									)}
+									
+									{/* Text message */}
+									{message.type === 'text' && <Text>{message.chatInfo}</Text>}
+									
 									<View className='flex flex-row items-center gap-1'>
 										<Text className='opacity-65 text-[10px]'>{time}</Text>
 										{message.isMsgEdited && <Text className='opacity-65 text-[10px]'>(edited)</Text>}

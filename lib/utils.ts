@@ -117,3 +117,47 @@ function formatDateForChat(date: Date) {
 		return `${day}-${month}-${year}`;
 	}
 }
+
+export const uploadFile = async (
+	userUid: string,
+	fileUri: string,
+	fileName: string,
+	fileType: string
+): Promise<string> => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			// Create form data
+			const formData = new FormData();
+			
+			// Generate storage path
+			const timestamp = Date.now();
+			const storagePath = `chat-files/${userUid}/${timestamp}_${fileName}`;
+			
+			// Append file
+			formData.append('file', {
+				uri: fileUri,
+				name: fileName,
+				type: fileType
+			} as any);
+
+			// Upload file
+			const response = await fetch(
+				`${globals.BACKEND_URL}/users/${userUid}/files?storagePath=${encodeURIComponent(storagePath)}`,
+				{
+					method: 'POST',
+					credentials: 'include',
+					body: formData
+				}
+			);
+
+			if (!response.ok) {
+				throw new Error('File upload failed');
+			}
+
+			const data = await response.json();
+			resolve(data.downloadUrl);
+		} catch (error) {
+			reject(error);
+		}
+	});
+};
