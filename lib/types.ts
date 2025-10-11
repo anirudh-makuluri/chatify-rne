@@ -7,6 +7,7 @@ export type ChatMessage = {
 	fileName?: string;
 	isMsgEdited?: boolean;
 	isMsgSaved?: boolean;
+	isAIMessage?: boolean;
 	reactions?: Array<{
 		id: string;
 		reactors: Array<{ uid: string; name: string }>;
@@ -18,7 +19,6 @@ export type ChatMessage = {
 	isUserInfoDisplayed?: boolean;
 	isConsecutiveMessage?: boolean;
 	isDate?: boolean;
-	isAIMessage?: boolean;
 };
 
 export type ChatDate = {
@@ -30,6 +30,7 @@ export type ChatDate = {
 	fileName?: undefined;
 	isMsgEdited?: undefined;
 	isMsgSaved?: undefined;
+	isAIMessage?: undefined;
 	userUid?: undefined;
 	userName?: undefined;
 	userPhoto?: undefined;

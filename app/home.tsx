@@ -152,6 +152,15 @@ export default function Page() {
 			navigationState={{ index, routes }}
 			onIndexChange={setIndex}
 			renderScene={renderScene}
+			activeColor="#3b82f6"
+			inactiveColor="#6b7280"
+			barStyle={{ 
+				backgroundColor: '#ffffff',
+				borderTopWidth: 1,
+				borderTopColor: '#e5e7eb',
+				paddingBottom: 8,
+				paddingTop: 8
+			}}
 		/>
 	)
 }
