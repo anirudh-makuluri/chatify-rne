@@ -161,3 +161,89 @@ export const uploadFile = async (
 		}
 	});
 };
+
+// AI Assistant API functions
+export const createAIAssistantRoom = async (userUid: string): Promise<any> => {
+	return customFetch({
+		pathName: `users/${userUid}/ai-assistant/room`,
+		method: 'POST'
+	});
+};
+
+export const sendAIChatRequest = (socket: any, message: string, roomId: string): Promise<any> => {
+	return new Promise((resolve, reject) => {
+		if (!socket) {
+			reject(new Error('Socket not connected'));
+			return;
+		}
+
+		socket.emit('ai_chat_request', {
+			message,
+			roomId
+		}, (response: any) => {
+			if (response.success) {
+				resolve(response);
+			} else {
+				reject(new Error(response.error || 'AI request failed'));
+			}
+		});
+	});
+};
+
+export const requestConversationSummary = (socket: any, roomId: string): Promise<any> => {
+	return new Promise((resolve, reject) => {
+		if (!socket) {
+			reject(new Error('Socket not connected'));
+			return;
+		}
+
+		socket.emit('ai_summarize_conversation', {
+			roomId
+		}, (response: any) => {
+			if (response.success) {
+				resolve(response);
+			} else {
+				reject(new Error(response.error || 'Summary request failed'));
+			}
+		});
+	});
+};
+
+export const analyzeMessageSentiment = (socket: any, message: string): Promise<any> => {
+	return new Promise((resolve, reject) => {
+		if (!socket) {
+			reject(new Error('Socket not connected'));
+			return;
+		}
+
+		socket.emit('ai_analyze_sentiment', {
+			message
+		}, (response: any) => {
+			if (response.success) {
+				resolve(response);
+			} else {
+				reject(new Error(response.error || 'Sentiment analysis failed'));
+			}
+		});
+	});
+};
+
+export const getSmartReplies = (socket: any, message: string, roomId?: string): Promise<any> => {
+	return new Promise((resolve, reject) => {
+		if (!socket) {
+			reject(new Error('Socket not connected'));
+			return;
+		}
+
+		socket.emit('ai_smart_replies', {
+			message,
+			roomId
+		}, (response: any) => {
+			if (response.success) {
+				resolve(response);
+			} else {
+				reject(new Error(response.error || 'Smart replies request failed'));
+			}
+		});
+	});
+};

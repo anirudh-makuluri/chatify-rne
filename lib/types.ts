@@ -66,4 +66,42 @@ export type TRoomData = {
 	currentChatDocId?: string;
 	hasMoreMessages?: boolean;
 	isLoadingMore?: boolean;
+	is_ai_room?: boolean;
+}
+
+// AI Assistant types
+export type AIResponse = {
+	success: boolean;
+	response?: string;
+	messageId?: string;
+	error?: string;
+}
+
+export type AISummaryResponse = {
+	success: boolean;
+	summary?: string;
+	timestamp?: string;
+	error?: string;
+}
+
+export type AISentimentResponse = {
+	success: boolean;
+	sentiment?: 'positive' | 'negative' | 'neutral';
+	timestamp?: string;
+	error?: string;
+}
+
+export type AISmartRepliesResponse = {
+	success: boolean;
+	replies?: string[];
+	timestamp?: string;
+	error?: string;
+}
+
+export type AIRoomData = {
+	success: boolean;
+	roomId?: string;
+	message?: string;
+	room?: TRoomData;
+	error?: string;
 }

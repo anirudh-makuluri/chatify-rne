@@ -4,7 +4,7 @@ import { Avatar, Button, Card, Text, TextInput, useTheme, Icon, ActivityIndicato
 import { useUser } from '~/app/providers';
 import { ChatMessage } from '~/lib/types';
 import { setActiveRoomId, setLoadingMore } from '~/redux/chatSlice';
-import { sendMessageToServer, loadChatHistory } from '~/redux/socketSlice';
+import { sendMessageToServer, loadChatHistory, requestConversationSummaryAction, analyzeMessageSentimentAction, getSmartRepliesAction, sendAIChatRequestAction } from '~/redux/socketSlice';
 import { useAppDispatch, useAppSelector } from '~/redux/store';
 import ChatBubble from '../components/ChatBubble';
 import { router } from 'expo-router';
@@ -26,6 +26,15 @@ export default function Room() {
 	const [attachMenuVisible, setAttachMenuVisible] = useState(false);
 	const [uploading, setUploading] = useState(false);
 	const [uploadProgress, setUploadProgress] = useState(0);
+	const [aiMenuVisible, setAiMenuVisible] = useState(false);
+	const [summaryDialogVisible, setSummaryDialogVisible] = useState(false);
+	const [summary, setSummary] = useState<string>("");
+	const [sentimentDialogVisible, setSentimentDialogVisible] = useState(false);
+	const [sentiment, setSentiment] = useState<string>("");
+	const [smartRepliesDialogVisible, setSmartRepliesDialogVisible] = useState(false);
+	const [smartReplies, setSmartReplies] = useState<string[]>([]);
+	const [testMessage, setTestMessage] = useState("");
+	const [showSmartReplies, setShowSmartReplies] = useState(false);
 
 	const generateId = () => {
 		return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -58,6 +67,7 @@ export default function Room() {
 
 		dispatch(sendMessageToServer(chatMessage))
 		setInput("");
+		setShowSmartReplies(false); // Clear smart replies when message is sent
 		if(textInputRef.current) textInputRef.current.blur();
 	}
 
@@ -71,6 +81,139 @@ export default function Room() {
 		
 		dispatch(setLoadingMore({ roomId: activeChatRoomId, isLoading: true }));
 		dispatch(loadChatHistory(activeChatRoomId, activeRoom.currentChatDocId));
+	};
+
+	// AI Functions
+	const handleSummarizeConversation = async () => {
+		try {
+			const response = await dispatch(requestConversationSummaryAction(activeChatRoomId)) as any;
+			if (response.success && response.summary) {
+				setSummary(response.summary);
+				setSummaryDialogVisible(true);
+			}
+		} catch (error) {
+			Alert.alert('Error', 'Failed to generate conversation summary');
+		}
+		setAiMenuVisible(false);
+	};
+
+	const handleAnalyzeSentiment = () => {
+		// Get the previous message for sentiment analysis
+		const messages = activeRoom.messages;
+		const textMessages = messages.filter(msg => !msg.isDate && msg.type === 'text');
+		
+		if (textMessages.length === 0) {
+			Alert.alert('No Messages', 'No text messages found to analyze');
+			setAiMenuVisible(false);
+			return;
+		}
+
+		// Get the last text message
+		const lastMessage = textMessages[textMessages.length - 1];
+		setTestMessage(lastMessage.chatInfo || '');
+		handleSentimentAnalysis();
+		setAiMenuVisible(false);
+	};
+
+	const handleGetSmartReplies = () => {
+		// Get the latest message that's not from the current user
+		const messages = activeRoom.messages;
+		const otherUserMessages = messages.filter(msg => 
+			!msg.isDate && 
+			msg.type === 'text' && 
+			msg.userUid !== user?.uid
+		);
+		
+		if (otherUserMessages.length === 0) {
+			Alert.alert('No Messages', 'No messages from other users found to generate smart replies');
+			setAiMenuVisible(false);
+			return;
+		}
+
+		// Get the latest message from other users
+		const latestOtherMessage = otherUserMessages[otherUserMessages.length - 1];
+		setTestMessage(latestOtherMessage.chatInfo || '');
+		handleSmartRepliesRequestInline();
+		setAiMenuVisible(false);
+	};
+
+	const handleSendAIMessage = () => {
+		if (!testMessage.trim()) return;
+		dispatch(sendAIChatRequestAction(testMessage, activeChatRoomId));
+		setTestMessage('');
+		setAiMenuVisible(false);
+	};
+
+	const handleSentimentAnalysis = async () => {
+		if (!testMessage.trim()) {
+			Alert.alert('Error', 'Please enter a message to analyze');
+			return;
+		}
+
+		// Show the dialog immediately
+		setSentimentDialogVisible(true);
+		setSentiment(''); // Reset sentiment
+
+		try {
+			const response = await dispatch(analyzeMessageSentimentAction(testMessage)) as any;
+			if (response.success && response.sentiment) {
+				setSentiment(response.sentiment);
+			} else {
+				Alert.alert('Error', 'Failed to analyze message sentiment');
+				setSentimentDialogVisible(false);
+			}
+		} catch (error) {
+			Alert.alert('Error', 'Failed to analyze message sentiment');
+			setSentimentDialogVisible(false);
+		}
+	};
+
+	const handleSmartRepliesRequest = async () => {
+		if (!testMessage.trim()) {
+			Alert.alert('Error', 'Please enter a message to get smart replies');
+			return;
+		}
+
+		// Show the dialog immediately
+		setSmartRepliesDialogVisible(true);
+		setSmartReplies([]); // Reset smart replies
+
+		try {
+			const response = await dispatch(getSmartRepliesAction(testMessage, activeChatRoomId)) as any;
+			if (response.success && response.replies) {
+				setSmartReplies(response.replies);
+			} else {
+				Alert.alert('Error', 'Failed to get smart replies');
+				setSmartRepliesDialogVisible(false);
+			}
+		} catch (error) {
+			Alert.alert('Error', 'Failed to get smart replies');
+			setSmartRepliesDialogVisible(false);
+		}
+	};
+
+	const handleSmartRepliesRequestInline = async () => {
+		if (!testMessage.trim()) {
+			Alert.alert('Error', 'Please enter a message to get smart replies');
+			return;
+		}
+
+		// Show smart replies above text box
+		setShowSmartReplies(true);
+		setSmartReplies([]); // Reset smart replies
+
+		try {
+			const response = await dispatch(getSmartRepliesAction(testMessage, activeChatRoomId)) as any;
+			if (response.success && response.replies) {
+				setSmartReplies(response.replies);
+			} else {
+				Alert.alert('Error', 'Failed to get smart replies');
+				setShowSmartReplies(false);
+			}
+		} catch (error) {
+			Alert.alert('Error', 'Failed to get smart replies');
+			setShowSmartReplies(false);
+		}
 	};
 
 	const pickImage = async () => {
@@ -180,12 +323,31 @@ export default function Room() {
 	return (
 		<SafeAreaView>
 			<View className='w-full h-full'>
-				<View className='px-2 py-4 bg-slate-200 flex flex-row justify-start items-center'>
-					<Button onPress={handleBackButton} mode='text' className='flex flex-row justify-center items-center'>
-						<Icon source={'chevron-left'} size={28} />
-					</Button>
-					<Avatar.Image size={48} className='mr-2' source={{ uri: activeRoom.photo_url }} />
-					<Text>{activeRoom.name} </Text>
+				<View className='px-2 py-4 bg-slate-200 flex flex-row justify-between items-center'>
+					<View className='flex flex-row items-center'>
+						<Button onPress={handleBackButton} mode='text' className='flex flex-row justify-center items-center'>
+							<Icon source={'chevron-left'} size={28} />
+						</Button>
+						<Avatar.Image size={48} className='mr-2' source={{ uri: activeRoom.photo_url }} />
+						<Text>{activeRoom.name} </Text>
+					</View>
+					
+					<Menu
+						visible={aiMenuVisible}
+						onDismiss={() => setAiMenuVisible(false)}
+						anchor={
+							<IconButton
+								icon="robot"
+								size={24}
+								onPress={() => setAiMenuVisible(true)}
+							/>
+						}
+					>
+						<Menu.Item onPress={handleSummarizeConversation} title="Summarize" leadingIcon="text-box-outline" />
+						<Menu.Item onPress={handleAnalyzeSentiment} title="Sentiment" leadingIcon="emoticon-outline" />
+						<Menu.Item onPress={handleGetSmartReplies} title="Smart Replies" leadingIcon="lightbulb-outline" />
+						<Menu.Item onPress={handleSendAIMessage} title="Ask AI" leadingIcon="chat" />
+					</Menu>
 				</View>
 			<FlatList
 				data={activeRoom.messages}
@@ -199,6 +361,47 @@ export default function Room() {
 				<View className='px-4 py-2 bg-slate-100'>
 					<Text className='text-sm mb-1'>Uploading...</Text>
 					<ProgressBar progress={uploadProgress} />
+				</View>
+			)}
+
+			{/* Smart Replies */}
+			{showSmartReplies && (
+				<View className='px-4 py-2 bg-blue-50 border-t border-blue-200'>
+					<View className='flex-row items-center justify-between mb-2'>
+						<Text variant='bodySmall' className='text-blue-700'>
+							Smart replies for: "{testMessage}"
+						</Text>
+						<IconButton
+							icon="close"
+							size={16}
+							onPress={() => setShowSmartReplies(false)}
+						/>
+					</View>
+					{smartReplies.length > 0 ? (
+						<View className='flex-row flex-wrap gap-2'>
+							{smartReplies.map((reply, index) => (
+								<Button
+									key={index}
+									mode="outlined"
+									compact
+									onPress={() => {
+										setInput(reply);
+										setShowSmartReplies(false);
+									}}
+									style={{ marginBottom: 4 }}
+								>
+									{reply}
+								</Button>
+							))}
+						</View>
+					) : (
+						<View className='flex-row items-center gap-2'>
+							<ActivityIndicator size="small" />
+							<Text variant='bodySmall' className='text-blue-600'>
+								Generating smart replies...
+							</Text>
+						</View>
+					)}
 				</View>
 			)}
 			
@@ -223,7 +426,13 @@ export default function Room() {
 				<TextInput
 					ref={textInputRef}
 					value={input}
-					onChangeText={(e) => setInput(e)}
+					onChangeText={(e) => {
+						setInput(e);
+						// Clear smart replies when user starts typing
+						if (e.length > 0 && showSmartReplies) {
+							setShowSmartReplies(false);
+						}
+					}}
 					placeholder="Type a message..."
 					style={{ flex: 1 }}
 					disabled={uploading}
@@ -238,6 +447,84 @@ export default function Room() {
 			</View>
 
 			</View>
+
+			{/* AI Dialogs */}
+			<Portal>
+				{/* Summary Dialog */}
+				<Dialog visible={summaryDialogVisible} onDismiss={() => setSummaryDialogVisible(false)}>
+					<Dialog.Title>Conversation Summary</Dialog.Title>
+					<Dialog.Content>
+						<Text>{summary}</Text>
+					</Dialog.Content>
+					<Dialog.Actions>
+						<Button onPress={() => setSummaryDialogVisible(false)}>Close</Button>
+					</Dialog.Actions>
+				</Dialog>
+
+				{/* Sentiment Analysis Dialog */}
+				<Dialog visible={sentimentDialogVisible} onDismiss={() => setSentimentDialogVisible(false)}>
+					<Dialog.Title>Sentiment Analysis</Dialog.Title>
+					<Dialog.Content>
+						<Text variant="bodyMedium" className="mb-3">
+							Analyzing: "{testMessage}"
+						</Text>
+						{sentiment ? (
+							<View className="flex-row items-center gap-2 p-3 bg-gray-100 rounded">
+								<Icon 
+									source={sentiment === 'positive' ? 'emoticon-happy' : sentiment === 'negative' ? 'emoticon-sad' : 'emoticon-neutral'}
+									size={24}
+								/>
+								<Text variant="titleMedium">
+									{sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
+								</Text>
+							</View>
+						) : (
+							<View className="flex-row items-center gap-2 p-3">
+								<ActivityIndicator size="small" />
+								<Text>Analyzing sentiment...</Text>
+							</View>
+						)}
+					</Dialog.Content>
+					<Dialog.Actions>
+						<Button onPress={() => setSentimentDialogVisible(false)}>Close</Button>
+					</Dialog.Actions>
+				</Dialog>
+
+				{/* Smart Replies Dialog */}
+				<Dialog visible={smartRepliesDialogVisible} onDismiss={() => setSmartRepliesDialogVisible(false)}>
+					<Dialog.Title>Smart Reply Suggestions</Dialog.Title>
+					<Dialog.Content>
+						<Text variant="bodyMedium" className="mb-3">
+							Replying to: "{testMessage}"
+						</Text>
+						{smartReplies.length > 0 ? (
+							<View className="gap-2">
+								{smartReplies.map((reply, index) => (
+									<Button
+										key={index}
+										mode="outlined"
+										onPress={() => {
+											setInput(reply);
+											setSmartRepliesDialogVisible(false);
+										}}
+										className="mb-1"
+									>
+										{reply}
+									</Button>
+								))}
+							</View>
+						) : (
+							<View className="flex-row items-center gap-2 p-3">
+								<ActivityIndicator size="small" />
+								<Text>Generating smart replies...</Text>
+							</View>
+						)}
+					</Dialog.Content>
+					<Dialog.Actions>
+						<Button onPress={() => setSmartRepliesDialogVisible(false)}>Close</Button>
+					</Dialog.Actions>
+				</Dialog>
+			</Portal>
 		</SafeAreaView>
 	)
 }

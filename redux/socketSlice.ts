@@ -2,8 +2,9 @@ import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from '@reduxjs/toolkit'
 import io, { Socket } from 'socket.io-client';
 import { AppThunk } from "./store";
-import { ChatMessage, TAuthUser, TUser } from "../lib/types";
+import { ChatMessage, TAuthUser, TUser, AIResponse, AISummaryResponse, AISentimentResponse, AISmartRepliesResponse } from "../lib/types";
 import { globals } from "../globals";
+import { sendAIChatRequest, requestConversationSummary, analyzeMessageSentiment, getSmartReplies } from "../lib/utils";
 
 interface SocketState {
 	socket: Socket | null
@@ -161,4 +162,59 @@ export const addReaction = (params: {
 			console.error('Failed to add/remove reaction:', response);
 		}
 	});
+};
+
+// AI Assistant WebSocket actions
+export const sendAIChatRequestAction = (message: string, roomId: string): AppThunk => async (dispatch, getState) => {
+	const { socket } = getState().socket;
+	if (!socket) return;
+
+	try {
+		const response = await sendAIChatRequest(socket, message, roomId);
+		console.log('AI Chat Request successful:', response);
+	} catch (error) {
+		console.error('AI Chat Request failed:', error);
+	}
+};
+
+export const requestConversationSummaryAction = (roomId: string): AppThunk => async (dispatch, getState) => {
+	const { socket } = getState().socket;
+	if (!socket) return;
+
+	try {
+		const response = await requestConversationSummary(socket, roomId);
+		console.log('Conversation Summary:', response);
+		return response;
+	} catch (error) {
+		console.error('Conversation Summary failed:', error);
+		throw error;
+	}
+};
+
+export const analyzeMessageSentimentAction = (message: string): AppThunk => async (dispatch, getState) => {
+	const { socket } = getState().socket;
+	if (!socket) return;
+
+	try {
+		const response = await analyzeMessageSentiment(socket, message);
+		console.log('Sentiment Analysis:', response);
+		return response;
+	} catch (error) {
+		console.error('Sentiment Analysis failed:', error);
+		throw error;
+	}
+};
+
+export const getSmartRepliesAction = (message: string, roomId?: string): AppThunk => async (dispatch, getState) => {
+	const { socket } = getState().socket;
+	if (!socket) return;
+
+	try {
+		const response = await getSmartReplies(socket, message, roomId);
+		console.log('Smart Replies:', response);
+		return response;
+	} catch (error) {
+		console.error('Smart Replies failed:', error);
+		throw error;
+	}
 };

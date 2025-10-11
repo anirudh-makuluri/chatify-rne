@@ -29,6 +29,7 @@ export default function ChatBubble({ message, isGroup, roomId }: { message: Chat
 	}
 
 	const isSelf = message.userUid == user?.uid;
+	const isAIMessage = message.isAIMessage || message.userUid === 'ai-assistant';
 
 	const time = new Date(message.time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 
@@ -112,10 +113,20 @@ export default function ChatBubble({ message, isGroup, roomId }: { message: Chat
 			<View className={(isSelf ? 'justify-end' : 'justify-start') + " flex my-2 flex-row w-full"}>
 				<View className='flex flex-col gap-1 w-[40%]'>
 					{
-						(!message.isConsecutiveMessage && isGroup) && (
+						(!message.isConsecutiveMessage && (isGroup || isAIMessage)) && (
 							<View className={(isSelf ? 'flex-row-reverse' : "flex-row") + ' flex gap-2 items-center'}>
-								<Avatar.Image size={28} source={{ uri: message.userPhoto }} />
-								<Text className='text-secondary-foreground'>{message.userName}</Text>
+								<Avatar.Image 
+									size={28} 
+									source={{ uri: isAIMessage ? 'https://ui-avatars.com/api/?name=AI&background=6366f1&color=ffffff' : message.userPhoto }} 
+								/>
+								<Text className='text-secondary-foreground'>
+									{isAIMessage ? 'Chatify AI' : message.userName}
+								</Text>
+								{isAIMessage && (
+									<Chip icon="robot" compact style={{ height: 20 }}>
+										AI
+									</Chip>
+								)}
 							</View>
 						)
 					}
@@ -131,9 +142,13 @@ export default function ChatBubble({ message, isGroup, roomId }: { message: Chat
 									? (message.isConsecutiveMessage
 										? 'bg-primary mr-5' :
 										'bg-primary mr-5 rounded-tr-none') :
-									(message.isConsecutiveMessage
-										? 'bg-slate-200 ml-5' :
-										'bg-slate-200 ml-5 rounded-tl-none'))
+									isAIMessage
+										? (message.isConsecutiveMessage
+											? 'bg-purple-100 ml-5 border border-purple-200' :
+											'bg-purple-100 ml-5 rounded-tl-none border border-purple-200')
+										: (message.isConsecutiveMessage
+											? 'bg-slate-200 ml-5' :
+											'bg-slate-200 ml-5 rounded-tl-none'))
 									+ " py-2 px-4 rounded-md"}>
 									
 									{/* Image */}
@@ -170,8 +185,8 @@ export default function ChatBubble({ message, isGroup, roomId }: { message: Chat
 						}
 					>
 						<Menu.Item onPress={handleReactPress} title="React" leadingIcon="emoticon-happy-outline" />
-						{isSelf && <Menu.Item onPress={handleEditPress} title="Edit" leadingIcon="pencil" />}
-						{isSelf && <Menu.Item onPress={handleDeletePress} title="Delete" leadingIcon="delete" />}
+						{isSelf && !isAIMessage && <Menu.Item onPress={handleEditPress} title="Edit" leadingIcon="pencil" />}
+						{isSelf && !isAIMessage && <Menu.Item onPress={handleDeletePress} title="Delete" leadingIcon="delete" />}
 					</Menu>
 					
 					{/* Display reactions */}
