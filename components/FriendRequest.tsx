@@ -60,14 +60,44 @@ export default function FriendRequest({ invitedUser } : { invitedUser: TUser }) 
 	}
 
 	return (
-		<View className='flex flex-row items-center justify-between'>
-			<View className='flex flex-row items-center gap-2'>
-				<Avatar.Image size={44} source={{ uri: invitedUser.photo_url }}/>
-				<Text>{invitedUser.name}</Text>
-			</View>
-			<View className='flex flex-row gap-2'>
-				<Button onPress={() => respondToRequest(true)} mode='contained'>Accept</Button>
-				<Button onPress={() => respondToRequest(false)} mode={'outlined'}>Decline</Button>
+		<View className='mx-4 my-2 bg-white rounded-xl shadow-sm border border-gray-100'>
+			<View className='flex flex-row items-center justify-between p-4'>
+				<View className='flex flex-row gap-3 flex-1'>
+					<Avatar.Image 
+						size={48} 
+						source={{ uri: invitedUser.photo_url }}
+						style={{ borderWidth: 2, borderColor: '#e5e7eb' }}
+					/>
+					<View className='flex flex-col gap-1 flex-1'>
+						<Text className="text-lg font-semibold text-gray-900">{invitedUser.name}</Text>
+						<Text className="text-sm text-gray-500">{invitedUser.email}</Text>
+						<View className="flex-row items-center gap-2 mt-1">
+							<View className="w-2 h-2 bg-green-500 rounded-full"></View>
+							<Text className="text-xs text-green-600 font-medium">Wants to be friends</Text>
+						</View>
+					</View>
+				</View>
+				<View className='flex flex-row gap-2'>
+					<Button 
+						mode='contained' 
+						onPress={() => respondToRequest(true)}
+						buttonColor="#10b981"
+						textColor="white"
+						compact
+						style={{ borderRadius: 20 }}
+					>
+						Accept
+					</Button>
+					<Button 
+						mode='outlined' 
+						onPress={() => respondToRequest(false)}
+						textColor="#ef4444"
+						compact
+						style={{ borderRadius: 20 }}
+					>
+						Decline
+					</Button>
+				</View>
 			</View>
 		</View>
 	)

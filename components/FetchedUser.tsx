@@ -22,20 +22,41 @@ export default function FetchedUser({ fetchedUser, closeModal }: { fetchedUser: 
 	}
 
 	return (
-		<View className='flex flex-row justify-between items-center gap-6'>
-			<View className='flex flex-row gap-2'>
-				<Avatar.Image size={32} source={{ uri: fetchedUser.photo_url }}/>
-				<View className='flex flex-col gap-2'>
-					<Text>{fetchedUser.name}</Text>
-					<Text>{fetchedUser.email}</Text>
+		<View className='bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100'>
+			<View className='flex flex-row justify-between items-center'>
+				<View className='flex flex-row gap-3 flex-1'>
+					<Avatar.Image 
+						size={48} 
+						source={{ uri: fetchedUser.photo_url }}
+						style={{ borderWidth: 2, borderColor: '#e5e7eb' }}
+					/>
+					<View className='flex flex-col gap-1 flex-1'>
+						<Text className="text-lg font-semibold text-gray-900">{fetchedUser.name}</Text>
+						<Text className="text-sm text-gray-500">{fetchedUser.email}</Text>
+						<View className="flex-row items-center gap-2 mt-1">
+							<View className="w-2 h-2 bg-blue-500 rounded-full"></View>
+							<Text className="text-xs text-blue-600 font-medium">Available to add</Text>
+						</View>
+					</View>
 				</View>
+				<Button 
+					mode='contained' 
+					onPress={handleAddFriend}
+					buttonColor="#3b82f6"
+					textColor="white"
+					compact
+					style={{ borderRadius: 20 }}
+				>
+					Add Friend
+				</Button>
 			</View>
-			<Button mode='contained' onPress={handleAddFriend}>Add Friend</Button>
 
 			<Snackbar
 				visible={snackbarMsg.length > 0}
 				duration={5000}
-				onDismiss={() => setSnackbarMsg("")}>
+				onDismiss={() => setSnackbarMsg("")}
+				style={{ backgroundColor: '#10b981' }}
+			>
 				{snackbarMsg}
 			</Snackbar>
 		</View>
