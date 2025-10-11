@@ -247,3 +247,81 @@ export const getSmartReplies = (socket: any, message: string, roomId?: string): 
 		});
 	});
 };
+
+// User profile update functions
+export const updateUserName = (socket: any, userUid: string, newName: string): Promise<any> => {
+	return new Promise((resolve, reject) => {
+		if (!socket) {
+			reject(new Error('Socket not connected'));
+			return;
+		}
+
+		socket.emit('update_user_data', { 
+			uid: userUid, 
+			newData: { name: newName } 
+		}, (response: any) => {
+			if (response.success) {
+				resolve(response);
+			} else {
+				reject(new Error(response.error || 'Name update failed'));
+			}
+		});
+	});
+};
+
+export const updateUserProfilePicture = (socket: any, userUid: string, photoUrl: string): Promise<any> => {
+	return new Promise((resolve, reject) => {
+		if (!socket) {
+			reject(new Error('Socket not connected'));
+			return;
+		}
+
+		socket.emit('update_user_data', { 
+			uid: userUid, 
+			newData: { photo_url: photoUrl } 
+		}, (response: any) => {
+			if (response.success) {
+				resolve(response);
+			} else {
+				reject(new Error(response.error || 'Profile picture update failed'));
+			}
+		});
+	});
+};
+
+export const uploadProfilePicture = async (userUid: string, fileUri: string): Promise<string> => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const storagePath = `${encodeURIComponent(userUid)}-profile_photo`;
+			
+			const formData = new FormData();
+			formData.append('file', {
+				uri: fileUri,
+				name: 'profile_photo.jpg',
+				type: 'image/jpeg'
+			} as any);
+
+			const response = await fetch(
+				`${globals.BACKEND_URL}/users/${userUid}/files?storagePath=${storagePath}`,
+				{
+					method: 'POST',
+					credentials: 'include',
+					body: formData
+				}
+			);
+
+			if (!response.ok) {
+				throw new Error('Profile picture upload failed');
+			}
+
+			const data = await response.json();
+			if (data.success) {
+				resolve(data.downloadUrl);
+			} else {
+				throw new Error(data.error || 'Upload failed');
+			}
+		} catch (error) {
+			reject(error);
+		}
+	});
+};
