@@ -10,6 +10,7 @@ import { router } from 'expo-router';
 type TUserContext = {
 	user: TAuthUser | null,
 	isLoading: boolean,
+	isLoggingOut: boolean,
 	login: Function,
 	logout: Function,
 	updateUser: Function
@@ -18,6 +19,7 @@ type TUserContext = {
 const UserContext = createContext<TUserContext>({
 	user: null,
 	isLoading: true,
+	isLoggingOut: false,
 	login: () => { },
 	logout: () => { },
 	updateUser: () => { }
@@ -35,6 +37,7 @@ const theme = {
 export function Providers({ children }: { children: ReactNode }) {
 	const [user, setUser] = useState<TAuthUser | null>(null);
 	const [isLoading, setLoading] = useState<boolean>(true);
+	const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
 
 	useEffect(() => {
 		if (!user) {
@@ -77,6 +80,7 @@ export function Providers({ children }: { children: ReactNode }) {
 	}
 
 	function logout() {
+		setIsLoggingOut(true);
 		customFetch({
 			pathName: 'session',
 		}).then(res => {
@@ -88,12 +92,14 @@ export function Providers({ children }: { children: ReactNode }) {
 			// Still clear user locally even if backend call fails
 			setUser(null);
 			router.replace('/auth');
+		}).finally(() => {
+			setIsLoggingOut(false);
 		})
 	}
 
 	return (
 		<SafeAreaProvider>
-			<UserContext.Provider value={{ user, login, logout, isLoading, updateUser }}>
+			<UserContext.Provider value={{ user, login, logout, isLoading, isLoggingOut, updateUser }}>
 				<ReduxProvider>
 					<PaperProvider theme={theme}>
 						{children}

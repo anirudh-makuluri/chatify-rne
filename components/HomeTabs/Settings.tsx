@@ -9,7 +9,7 @@ import { useAppSelector } from '~/redux/store';
 import { updateUserName, updateUserProfilePicture, uploadProfilePicture } from '~/lib/utils';
 import * as ImagePicker from 'expo-image-picker';
 export default function Settings() {
-	const { user, logout, updateUser } = useUser();
+	const { user, logout, updateUser, isLoggingOut } = useUser();
 	const dispatch = useDispatch();
 	const theme = useTheme();
 	const socket = useAppSelector(state => state.socket.socket);
@@ -153,8 +153,10 @@ export default function Settings() {
 					mode='contained'
 					style={{ borderRadius: 12, paddingVertical: 8 }}
 					textColor="white"
+					disabled={isLoggingOut}
+					loading={isLoggingOut}
 				>
-					Log Out
+					{isLoggingOut ? "Logging out..." : "Log Out"}
 				</Button>
 			</View>
 		</SafeAreaView>

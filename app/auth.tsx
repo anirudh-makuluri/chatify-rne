@@ -4,7 +4,9 @@ import {
 	Text,
 	Button,
 	TextInput,
-	Snackbar
+	Snackbar,
+	ActivityIndicator,
+	Card
 } from 'react-native-paper'
 import { useUser } from './providers';
 import { router } from 'expo-router'
@@ -28,6 +30,7 @@ export default function Page() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [snackbarMsg, setSnackbarMsg] = useState("");
+	const [isAuthenticating, setIsAuthenticating] = useState(false);
 
 	useEffect(() => {
 		GoogleSignin.configure({
@@ -53,6 +56,9 @@ export default function Page() {
 			setSnackbarMsg("Email or Password not given");
 			return;
 		}
+
+		setIsAuthenticating(true);
+		setSnackbarMsg("");
 
 		try {
 			if (isSignIn) {
@@ -84,11 +90,15 @@ export default function Page() {
 					break;
 			}
 
-			setSnackbarMsg(errorMessage)
+			setSnackbarMsg(errorMessage);
+			setIsAuthenticating(false);
 		}
 	}
 
 	async function authWithGoogle() {
+		setIsAuthenticating(true);
+		setSnackbarMsg("");
+
 		try {
 			await GoogleSignin.hasPlayServices();
 			const { idToken } =  await GoogleSignin.signIn();
@@ -102,6 +112,7 @@ export default function Page() {
 		} catch (error : any) {
 			console.warn('Google Sign-In error:', { code: error.code, message: error.message, native: error });
 			setSnackbarMsg("Error occured while trying to authenticate using google");
+			setIsAuthenticating(false);
 		}
 	}
 
@@ -119,6 +130,10 @@ export default function Page() {
 		}).then(res => {
 			auth.signOut();
 			login();
+		}).catch(error => {
+			console.error('Session creation failed:', error);
+			setSnackbarMsg("Authentication failed. Please try again.");
+			setIsAuthenticating(false);
 		})
 	}
 
@@ -127,31 +142,65 @@ export default function Page() {
 	return (
 		<SafeAreaView>
 			<View className='h-full flex flex-col justify-center items-center gap-4'>
-				<Button className='w-1/2' onPress={authWithGoogle} mode='contained'>{isSignIn ? "Sign In" : "Sign Up"} With Google</Button>
-				<View className='flex flex-row items-center justify-center gap-2'>
-					<View className='bg-primary h-[1px] w-1/3'></View>
-					<Text>OR</Text>
-					<View className='bg-primary h-[1px] w-1/3'></View>
-				</View>
-				<TextInput
-					label="Email"
-					value={email}
-					mode='outlined'
-					className='w-[70vw]'
-					onChangeText={text => setEmail(text.toLowerCase())}
-				/>
-				<TextInput
-					label="Password"
-					value={password}
-					className='w-[70vw] '
-					onChangeText={text => setPassword(text)}
-					mode='outlined'
-				/>
-				<Button onPress={authWithEmailAndPassword} mode='contained'>{isSignIn ? "Sign In" : "Sign Up"}</Button>
-				<View className='flex flex-row items-center'>
-					<Text>{isSignIn ? "Don't have an account?" : "Already have an account?"}</Text>
-					<Button onPress={() => setSignIn(prevState => !prevState)}>{isSignIn ? "Create account" : "Sign in"}</Button>
-				</View>
+				{isAuthenticating ? (
+					<Card className='w-[80vw] py-10 px-6 items-center'>
+						<ActivityIndicator size="large" color="#16A34A" />
+						<Text variant='titleMedium' className='mt-4 text-center'>
+							{isSignIn ? "Signing you in..." : "Creating your account..."}
+						</Text>
+						<Text variant='bodySmall' className='mt-2 text-center text-gray-600'>
+							Please wait while we authenticate with the server
+						</Text>
+					</Card>
+				) : (
+					<>
+						<Button 
+							className='w-1/2' 
+							onPress={authWithGoogle} 
+							mode='contained'
+							disabled={isAuthenticating}
+						>
+							{isSignIn ? "Sign In" : "Sign Up"} With Google
+						</Button>
+						<View className='flex flex-row items-center justify-center gap-2'>
+							<View className='bg-primary h-[1px] w-1/3'></View>
+							<Text>OR</Text>
+							<View className='bg-primary h-[1px] w-1/3'></View>
+						</View>
+						<TextInput
+							label="Email"
+							value={email}
+							mode='outlined'
+							className='w-[70vw]'
+							onChangeText={text => setEmail(text.toLowerCase())}
+							disabled={isAuthenticating}
+						/>
+						<TextInput
+							label="Password"
+							value={password}
+							className='w-[70vw] '
+							onChangeText={text => setPassword(text)}
+							mode='outlined'
+							disabled={isAuthenticating}
+						/>
+						<Button 
+							onPress={authWithEmailAndPassword} 
+							mode='contained'
+							disabled={isAuthenticating}
+						>
+							{isSignIn ? "Sign In" : "Sign Up"}
+						</Button>
+						<View className='flex flex-row items-center'>
+							<Text>{isSignIn ? "Don't have an account?" : "Already have an account?"}</Text>
+							<Button 
+								onPress={() => setSignIn(prevState => !prevState)}
+								disabled={isAuthenticating}
+							>
+								{isSignIn ? "Create account" : "Sign in"}
+							</Button>
+						</View>
+					</>
+				)}
 				<Snackbar
 					visible={snackbarMsg.length > 0}
 					duration={5000}
