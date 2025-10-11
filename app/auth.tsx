@@ -11,18 +11,20 @@ import {
 import { useUser } from './providers';
 import { router } from 'expo-router'
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithCredential } from "firebase/auth";
+import { initializeAuth, GoogleAuthProvider, User, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithCredential, getReactNativePersistence } from "firebase/auth";
 import { config } from '~/lib/config';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { customFetch } from '~/lib/utils';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const app = initializeApp(config.firebaseConfig);
-const auth = getAuth(app);
+const auth = initializeAuth(app, {
+	persistence: getReactNativePersistence(AsyncStorage)
+});
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: "select_account" })
 
-LogBox.ignoreLogs(['You are initializing Firebase Auth for React Native without providing AsyncStorage'])
 
 export default function Page() {
 	const { user, isLoading, login } = useUser();

@@ -10,7 +10,7 @@
     "server": "cd ../chatify-backend |  npm start"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "1.21.0",
+    "@react-native-async-storage/async-storage": "^1.21.0",
     "@react-native-google-signin/google-signin": "^11.0.1",
     "@react-navigation/native": "^6.1.17",
     "@react-navigation/native-stack": "^6.9.26",
