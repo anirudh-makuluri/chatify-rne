@@ -44,7 +44,9 @@ export type TUser = {
 	name: string,
 	email: string,
 	photo_url: string,
-	uid: string
+	uid: string,
+	is_online?: boolean,
+	last_seen?: number
 }
 
 export type TAuthUser = {
@@ -68,6 +70,9 @@ export type TRoomData = {
 	hasMoreMessages?: boolean;
 	isLoadingMore?: boolean;
 	is_ai_room?: boolean;
+	members?: string[]; // Array of member UIDs for group chats
+	created_at?: string; // Creation timestamp for group chats
+	membersData?: TUser[];
 }
 
 // AI Assistant types
@@ -105,4 +110,56 @@ export type AIRoomData = {
 	message?: string;
 	room?: TRoomData;
 	error?: string;
+}
+
+// Group Chat types
+export type GroupCreateRequest = {
+	name: string;
+	photoUrl?: string;
+	memberUids: string[];
+}
+
+export type GroupCreateResponse = {
+	success: string;
+	roomId: string;
+	room: TRoomData;
+}
+
+export type GroupAddMembersRequest = {
+	memberUids: string[];
+}
+
+export type GroupAddMembersResponse = {
+	success: string;
+	added: string[];
+	roomId: string;
+}
+
+export type GroupRemoveMemberResponse = {
+	success: string;
+	removed: string;
+	roomId: string;
+}
+
+export type GroupUpdateRequest = {
+	name?: string;
+	photoUrl?: string;
+}
+
+export type GroupUpdateResponse = {
+	success: string;
+	roomId: string;
+	updates: Partial<GroupUpdateRequest>;
+}
+
+export type GroupDeleteResponse = {
+	success: string;
+	roomId: string;
+}
+
+// Presence types
+export type PresenceUpdate = {
+	uid: string;
+	is_online: boolean;
+	last_seen: number | null;
 }

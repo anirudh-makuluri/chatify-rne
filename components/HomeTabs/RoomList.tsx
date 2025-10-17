@@ -1,27 +1,31 @@
 import React, { useState, useMemo } from 'react'
 import { FlatList, View, Text } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { Icon, Searchbar, IconButton } from 'react-native-paper'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Icon, Searchbar, IconButton, FAB, Button } from 'react-native-paper'
 import RoomDisplayItem from '../RoomDisplayItem'
+import GroupChat from '../GroupChat'
 import { useUser } from '~/app/providers'
 
 export default function RoomList() {
 	const { user } = useUser();
 	const [searchQuery, setSearchQuery] = useState('');
+	const [showCreateGroup, setShowCreateGroup] = useState(false);
+
+	const insets = useSafeAreaInsets();
+	const bottomPad = (insets.bottom || 0) + 180; // approximate BottomNavigation height
 
 	const filteredRooms = useMemo(() => {
 		if (!user?.rooms) return [];
 		if (!searchQuery.trim()) return user.rooms;
-		
-		return user.rooms.filter(room => 
-			room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			room.messages.some(msg => 
-				!msg.isDate && 
-				msg.type === 'text' && 
-				msg.chatInfo && 
-				msg.chatInfo.toLowerCase().includes(searchQuery.toLowerCase())
-			)
-		);
+		const q = searchQuery.toLowerCase();
+		return user.rooms.filter(room => {
+			const nameMatch = (room.name || '').toLowerCase().includes(q);
+			const messages = Array.isArray(room.messages) ? room.messages : [];
+			const msgMatch = messages.some(msg =>
+				!msg.isDate && msg.type === 'text' && typeof msg.chatInfo === 'string' && msg.chatInfo.toLowerCase().includes(q)
+			);
+			return nameMatch || msgMatch;
+		});
 	}, [user?.rooms, searchQuery]);
 
 	const renderEmptyState = () => (
@@ -35,21 +39,36 @@ export default function RoomList() {
 			<Text className="text-gray-500 text-center mb-6">
 				Start a conversation by adding friends or creating a group chat
 			</Text>
-			<View className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+			<View className="bg-blue-50 rounded-xl p-4 border border-blue-200 mb-4">
 				<Text className="text-blue-700 text-center font-medium">
 					💡 Go to Friends tab to add new friends and start chatting!
 				</Text>
 			</View>
+			<Button
+				mode="contained"
+				onPress={() => setShowCreateGroup(true)}
+				icon="account-multiple-plus"
+				style={{ backgroundColor: '#3b82f6' }}
+			>
+				Create Group Chat
+			</Button>
 		</View>
 	);
 
 	return (
 		<SafeAreaView className="flex-1 bg-gray-50">
-			<View className="px-4 py-4 bg-white border-b border-gray-200">
+			<View className="px-4 py-4 border-b border-gray-200">
 				<View className="flex-row items-center justify-between mb-4">
 					<Text className="text-2xl font-bold text-gray-900">
 						Chats
 					</Text>
+					<IconButton
+						icon="account-multiple-plus"
+						size={24}
+						iconColor="#3b82f6"
+						onPress={() => setShowCreateGroup(true)}
+						style={{ backgroundColor: '#f0f9ff' }}
+					/>
 				</View>
 				
 				<View className="flex-row items-center gap-3 mb-2">
@@ -108,12 +127,20 @@ export default function RoomList() {
 						data={roomsToShow}
 						renderItem={({ item, index }) => <RoomDisplayItem roomData={item} key={index} />}
 						className=""
-						showsVerticalScrollIndicator={false}
-						contentContainerStyle={{ paddingVertical: 8 }}
+						showsVerticalScrollIndicator={true}
+						contentContainerStyle={{ paddingVertical: 8, paddingBottom: bottomPad }}
 						keyExtractor={(item, index) => item.roomId || index.toString()}
 					/>
 				);
 			})()}
+		
+
+			{/* Group Creation Modal */}
+			{showCreateGroup && (
+				<GroupChat
+					onClose={() => setShowCreateGroup(false)}
+				/>
+			)}
 		</SafeAreaView>
 	)
 }

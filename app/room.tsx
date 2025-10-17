@@ -1,12 +1,13 @@
-import React, { useRef, useState } from 'react'
-import { FlatList, Image, View, Alert } from 'react-native'
-import { Avatar, Button, Card, Text, TextInput, useTheme, Icon, ActivityIndicator, IconButton, Menu, Portal, Dialog, ProgressBar } from 'react-native-paper'
+import React, { useEffect, useRef, useState } from 'react'
+import { FlatList, Image, View, Alert, ScrollView } from 'react-native'
+import { Avatar, Button, Card, Text, TextInput, useTheme, Icon, ActivityIndicator, IconButton, Menu, Portal, Dialog, ProgressBar, Chip } from 'react-native-paper'
 import { useUser } from '~/app/providers';
 import { ChatMessage } from '~/lib/types';
 import { setActiveRoomId, setLoadingMore } from '~/redux/chatSlice';
 import { sendMessageToServer, loadChatHistory, requestConversationSummaryAction, analyzeMessageSentimentAction, getSmartRepliesAction, sendAIChatRequestAction } from '~/redux/socketSlice';
 import { useAppDispatch, useAppSelector } from '~/redux/store';
 import ChatBubble from '../components/ChatBubble';
+import GroupChat from '../components/GroupChat';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -16,6 +17,7 @@ import { uploadFile } from '~/lib/utils';
 export default function Room() {
 	const activeChatRoomId = useAppSelector(state => state.chat.activeChatRoomId);
 	const activeRoom = useAppSelector(state => state.chat.rooms[activeChatRoomId]);
+	const userPresence = useAppSelector(state => state.chat.userPresence);
 	const textInputRef = useRef<any>(null); //Fix this
 
 	const dispatch = useAppDispatch();
@@ -35,6 +37,12 @@ export default function Room() {
 	const [smartReplies, setSmartReplies] = useState<string[]>([]);
 	const [testMessage, setTestMessage] = useState("");
 	const [showSmartReplies, setShowSmartReplies] = useState(false);
+	const [showGroupManagement, setShowGroupManagement] = useState(false);
+	const [showGroupMembers, setShowGroupMembers] = useState(false);
+
+	if(activeChatRoomId == '' || activeRoom == null) {
+		return null;
+	}
 
 	const generateId = () => {
 		return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -43,10 +51,47 @@ export default function Room() {
 		});
 	};
 
+	// Helper functions for presence and group management
+	const getUserPresence = () => {
+		if(!user) return '';
+		if(!activeRoom) return '';
+		if(activeRoom.is_group) return ''
+		const otherUid = (activeRoom.members || []).find((m: any) => m.uid !== user.uid);
+		if(!otherUid) return '';
+		if (userPresence[otherUid]?.is_online) return 'Online';
+		console.log(userPresence[otherUid]);
+		return `Last seen ${formatLastSeen(userPresence[otherUid]?.last_seen || null)}`;
+	};
+
+	const getMemberName = (uid: string) => {
+		const friend = user?.friend_list?.find(f => f.uid === uid);
+		return friend?.name || 'Unknown User';
+	};
+
+	const getMemberPhoto = (uid: string) => {
+		const friend = user?.friend_list?.find(f => f.uid === uid);
+		return friend?.photo_url || '';
+	};
+
+	const formatLastSeen = (input: string | number | null) => {		
+		if (!input) return '';
+		
+		const date = new Date(input);
+		const now = new Date();
+		const diffMs = now.getTime() - date.getTime();
+		const minutes = Math.floor(diffMs / 60000);
+		if (minutes < 1) return 'just now';
+		if (minutes < 60) return `${minutes} min ago`;
+		const hours = Math.floor(minutes / 60);
+		if (hours < 24) return `${hours} hr${hours > 1 ? 's' : ''} ago`;
+		const days = Math.floor(hours / 24);
+		return `${days} day${days > 1 ? 's' : ''} ago`;
+	};
+
 	const sendMessage = () => {
 		if (input.trim() == "" || input == null) return;
 
-		if (!user) {
+		if (!user || activeChatRoomId == '') {
 			//Show snack message
 			return;
 		}
@@ -165,30 +210,6 @@ export default function Room() {
 		} catch (error) {
 			Alert.alert('Error', 'Failed to analyze message sentiment');
 			setSentimentDialogVisible(false);
-		}
-	};
-
-	const handleSmartRepliesRequest = async () => {
-		if (!testMessage.trim()) {
-			Alert.alert('Error', 'Please enter a message to get smart replies');
-			return;
-		}
-
-		// Show the dialog immediately
-		setSmartRepliesDialogVisible(true);
-		setSmartReplies([]); // Reset smart replies
-
-		try {
-			const response = await dispatch(getSmartRepliesAction(testMessage, activeChatRoomId)) as any;
-			if (response.success && response.replies) {
-				setSmartReplies(response.replies);
-			} else {
-				Alert.alert('Error', 'Failed to get smart replies');
-				setSmartRepliesDialogVisible(false);
-			}
-		} catch (error) {
-			Alert.alert('Error', 'Failed to get smart replies');
-			setSmartRepliesDialogVisible(false);
 		}
 	};
 
@@ -324,30 +345,54 @@ export default function Room() {
 		<SafeAreaView>
 			<View className='w-full h-full'>
 				<View className='px-2 py-4 bg-slate-200 flex flex-row justify-between items-center'>
-					<View className='flex flex-row items-center'>
+					<View className='flex flex-row items-center flex-1'>
 						<Button onPress={handleBackButton} mode='text' className='flex flex-row justify-center items-center'>
 							<Icon source={'chevron-left'} size={28} />
 						</Button>
-						<Avatar.Image size={48} className='mr-2' source={{ uri: activeRoom.photo_url }} />
-						<Text>{activeRoom.name} </Text>
+						<View className='flex-row items-center flex-1'>
+							<Avatar.Image size={48} className='mr-2' source={{ uri: activeRoom?.photo_url }} />
+							<View className='flex-1'>
+								<Text className='font-semibold'>{activeRoom.name}</Text>
+								{activeRoom.is_group ? (
+									<Text className='text-sm text-gray-600'>
+										{activeRoom.members?.length || 0} members
+									</Text>
+								) : (
+									<View className='flex-row items-center'>
+										<Text className='text-sm text-gray-600'>
+											{getUserPresence()}
+										</Text>
+									</View>
+								)}
+							</View>
+						</View>
 					</View>
 					
-					<Menu
-						visible={aiMenuVisible}
-						onDismiss={() => setAiMenuVisible(false)}
-						anchor={
+					<View className='flex-row items-center'>
+						{activeRoom.is_group && (
 							<IconButton
-								icon="robot"
+								icon="account-multiple"
 								size={24}
-								onPress={() => setAiMenuVisible(true)}
+								onPress={() => setShowGroupMembers(true)}
 							/>
-						}
-					>
-						<Menu.Item onPress={handleSummarizeConversation} title="Summarize" leadingIcon="text-box-outline" />
-						<Menu.Item onPress={handleAnalyzeSentiment} title="Sentiment" leadingIcon="emoticon-outline" />
-						<Menu.Item onPress={handleGetSmartReplies} title="Smart Replies" leadingIcon="lightbulb-outline" />
-						<Menu.Item onPress={handleSendAIMessage} title="Ask AI" leadingIcon="chat" />
-					</Menu>
+						)}
+						<Menu
+							visible={aiMenuVisible}
+							onDismiss={() => setAiMenuVisible(false)}
+							anchor={
+								<IconButton
+									icon="robot"
+									size={24}
+									onPress={() => setAiMenuVisible(true)}
+								/>
+							}
+						>
+							<Menu.Item onPress={handleSummarizeConversation} title="Summarize" leadingIcon="text-box-outline" />
+							<Menu.Item onPress={handleAnalyzeSentiment} title="Sentiment" leadingIcon="emoticon-outline" />
+							<Menu.Item onPress={handleGetSmartReplies} title="Smart Replies" leadingIcon="lightbulb-outline" />
+							<Menu.Item onPress={handleSendAIMessage} title="Ask AI" leadingIcon="chat" />
+						</Menu>
+					</View>
 				</View>
 			<FlatList
 				data={activeRoom.messages}
@@ -524,7 +569,58 @@ export default function Room() {
 						<Button onPress={() => setSmartRepliesDialogVisible(false)}>Close</Button>
 					</Dialog.Actions>
 				</Dialog>
+
+				{/* Group Members Dialog */}
+				<Dialog visible={showGroupMembers} onDismiss={() => setShowGroupMembers(false)}>
+					<Dialog.Title>Group Members</Dialog.Title>
+					<Dialog.Content>
+						<ScrollView showsVerticalScrollIndicator={false}>
+							{activeRoom.members?.map(uid => {
+								// const presence = getUserPresence();
+								return (
+									<Card key={uid} className="mb-2">
+										<View className="flex-row items-center p-3">
+											{/* <Avatar.Image 
+												size={40} 
+												source={{ uri: getMemberPhoto(uid) }} 
+											/> */}
+											<View className="flex-1 ml-3">
+												<Text variant="titleMedium">{getMemberName(uid)}</Text>
+												<View className="flex-row items-center">
+													{/* <View className={`w-2 h-2 rounded-full mr-1 ${
+														presence?.is_online ? 'bg-green-500' : 'bg-gray-400'
+													}`} />
+													<Text variant="bodySmall" className="text-gray-500">
+														{presence?.is_online 
+															? 'Online' 
+															: `Last seen ${formatLastSeen(presence?.last_seen || null)}`
+														}
+													</Text> */}
+												</View>
+											</View>
+										</View>
+									</Card>
+								);
+							})}
+						</ScrollView>
+					</Dialog.Content>
+					<Dialog.Actions>
+						<Button onPress={() => setShowGroupMembers(false)}>Close</Button>
+						<Button onPress={() => {
+							setShowGroupMembers(false);
+							setShowGroupManagement(true);
+						}}>Manage Group</Button>
+					</Dialog.Actions>
+				</Dialog>
 			</Portal>
+
+			{/* Group Management Modal */}
+			{showGroupManagement && (
+				<GroupChat
+					roomId={activeChatRoomId}
+					onClose={() => setShowGroupManagement(false)}
+				/>
+			)}
 		</SafeAreaView>
 	)
 }

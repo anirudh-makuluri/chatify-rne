@@ -1,4 +1,4 @@
-import { ChatDate, ChatMessage, TRoomData } from "../lib/types";
+import { ChatDate, ChatMessage, TRoomData, PresenceUpdate } from "../lib/types";
 import { formatChatMessages } from "../lib/utils";
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from '@reduxjs/toolkit'
@@ -7,12 +7,19 @@ export interface IChatState {
 	activeChatRoomId: string,
 	rooms: {
 		[roomId: string]: TRoomData
+	},
+	userPresence: {
+		[uid: string]: {
+			is_online: boolean;
+			last_seen: number | null;
+		}
 	}
 }
 
 const initialState: IChatState = {
 	activeChatRoomId: '',
-	rooms: {}
+	rooms: {},
+	userPresence: {}
 }
 
 export const chatSlice = createSlice({
@@ -28,9 +35,16 @@ export const chatSlice = createSlice({
 				photo_url: roomData.photo_url,
 				roomId: roomData.roomId,
 				currentChatDocId: roomData.messages[0]?.chatDocId,
-				hasMoreMessages: true,
+				hasMoreMessages: false,
 				isLoadingMore: false,
+				members: roomData.members,
 			}
+			roomData.membersData?.forEach(member => {
+				state.userPresence[member.uid] = {
+					is_online: member.is_online || false,
+					last_seen: member.last_seen || null
+				};
+			});
 		},
 		setActiveRoomId: (state, action: PayloadAction<string>) => {
 			state.activeChatRoomId = action.payload
@@ -232,9 +246,76 @@ export const chatSlice = createSlice({
 					});
 				}
 			}
+		},
+		// Group management actions
+		addGroupRoom: (state, action: PayloadAction<TRoomData>) => {
+			const roomData = action.payload;
+			state.rooms[roomData.roomId] = {
+				is_group: true,
+				messages: [],
+				name: roomData.name,
+				photo_url: roomData.photo_url,
+				roomId: roomData.roomId,
+				hasMoreMessages: false,
+				isLoadingMore: false,
+				members: roomData.members,
+			}
+		},
+		updateGroupMembers: (state, action: PayloadAction<{ roomId: string; members: string[] }>) => {
+			const { roomId, members } = action.payload;
+			if (state.rooms[roomId]) {
+				state.rooms[roomId].members = members;
+			}
+		},
+		updateGroupInfo: (state, action: PayloadAction<{ roomId: string; name?: string; photo_url?: string }>) => {
+			const { roomId, name, photo_url } = action.payload;
+			if (state.rooms[roomId]) {
+				if (name) state.rooms[roomId].name = name;
+				if (photo_url) state.rooms[roomId].photo_url = photo_url;
+			}
+		},
+		removeGroupRoom: (state, action: PayloadAction<string>) => {
+			const roomId = action.payload;
+			delete state.rooms[roomId];
+			if (state.activeChatRoomId === roomId) {
+				state.activeChatRoomId = '';
+			}
+		},
+		// Presence management actions
+		updateUserPresence: (state, action: PayloadAction<PresenceUpdate>) => {
+			const { uid, is_online, last_seen } = action.payload;
+			state.userPresence[uid] = {
+				is_online,
+				last_seen
+			};
+		},
+		updateMultipleUserPresence: (state, action: PayloadAction<PresenceUpdate[]>) => {
+			action.payload.forEach(presence => {
+				state.userPresence[presence.uid] = {
+					is_online: presence.is_online,
+					last_seen: presence.last_seen
+				};
+			});
 		}
 	}
 })
 
-export const { setActiveRoomId, addMessage, joinChatRoom, clearRoomData, addChatDoc, setLoadingMore, addOlderMessages, editMessageInChat, deleteMessageFromChat, toggleReaction } = chatSlice.actions
+export const { 
+	setActiveRoomId, 
+	addMessage, 
+	joinChatRoom, 
+	clearRoomData, 
+	addChatDoc, 
+	setLoadingMore, 
+	addOlderMessages, 
+	editMessageInChat, 
+	deleteMessageFromChat, 
+	toggleReaction,
+	addGroupRoom,
+	updateGroupMembers,
+	updateGroupInfo,
+	removeGroupRoom,
+	updateUserPresence,
+	updateMultipleUserPresence
+} = chatSlice.actions
 export const chatReducer = chatSlice.reducer

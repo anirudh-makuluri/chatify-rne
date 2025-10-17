@@ -1,3 +1,5 @@
 export const globals = {
-	BACKEND_URL: 'http://192.168.0.102:5000'
+	// Use 10.0.2.2 for Android emulator to access host's localhost
+	// Use localhost for web or iOS simulator
+	BACKEND_URL: 'http://10.0.2.2:5000'
 }

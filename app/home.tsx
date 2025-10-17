@@ -7,7 +7,7 @@ import { useUser } from './providers';
 import { router } from 'expo-router';
 import { useAppDispatch, useAppSelector } from '~/redux/store';
 import { initAndJoinSocketRooms, joinSocketRoom } from '~/redux/socketSlice';
-import { addMessage, clearRoomData, joinChatRoom, editMessageInChat, deleteMessageFromChat, toggleReaction } from '~/redux/chatSlice';
+import { addMessage, clearRoomData, joinChatRoom, editMessageInChat, deleteMessageFromChat, toggleReaction, updateUserPresence } from '~/redux/chatSlice';
 import { ChatMessage, TUser, TRoomData } from '~/lib/types';
 import { genRoomId } from '~/lib/utils';
 import RoomList from '~/components/HomeTabs/RoomList';
@@ -43,7 +43,7 @@ export default function Page() {
 
 		if (!user) return;
 
-		const roomIds: string[] = user.rooms.map(u => u.roomId);
+		const roomIds: string[] = Array.isArray(user.rooms) ? user.rooms.map(u => u.roomId) : [];
 
 		dispatch(initAndJoinSocketRooms(roomIds, {
 			email: user.email,
@@ -52,9 +52,11 @@ export default function Page() {
 			uid: user.uid
 		}));
 
-		user.rooms.forEach((roomData) => {
-			dispatch(joinChatRoom(roomData));
-		});
+		if (Array.isArray(user.rooms)) {
+			user.rooms.forEach((roomData) => {
+				dispatch(joinChatRoom(roomData));
+			});
+		}
 
 	}, [user, isLoading]);
 
@@ -134,6 +136,12 @@ export default function Page() {
 			userUid: data.userUid,
 			userName: data.userName
 		}));
+	})
+
+	// Presence update listener
+	socket.on('presence_update', (presenceData: any) => {
+		console.log('User presence changed:', presenceData);
+		dispatch(updateUserPresence(presenceData));
 	})
 
 		return () => {

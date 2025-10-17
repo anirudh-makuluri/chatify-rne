@@ -1,4 +1,4 @@
-import { ChatMessage, ChatDate } from "./types"
+import { ChatMessage, ChatDate, GroupCreateRequest, GroupCreateResponse, GroupAddMembersRequest, GroupAddMembersResponse, GroupRemoveMemberResponse, GroupUpdateRequest, GroupUpdateResponse, GroupDeleteResponse } from "./types"
 import { globals } from "../globals"
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -323,5 +323,44 @@ export const uploadProfilePicture = async (userUid: string, fileUri: string): Pr
 		} catch (error) {
 			reject(error);
 		}
+	});
+};
+
+// Group Chat API functions
+export const createGroup = async (userUid: string, groupData: GroupCreateRequest): Promise<GroupCreateResponse> => {
+	return customFetch({
+		pathName: `users/${userUid}/groups`,
+		method: 'POST',
+		body: groupData
+	});
+};
+
+export const addMembersToGroup = async (userUid: string, roomId: string, memberData: GroupAddMembersRequest): Promise<GroupAddMembersResponse> => {
+	return customFetch({
+		pathName: `users/${userUid}/groups/${roomId}/members`,
+		method: 'POST',
+		body: memberData
+	});
+};
+
+export const removeMemberFromGroup = async (userUid: string, roomId: string, memberUid: string): Promise<GroupRemoveMemberResponse> => {
+	return customFetch({
+		pathName: `users/${userUid}/groups/${roomId}/members/${memberUid}`,
+		method: 'DELETE'
+	});
+};
+
+export const updateGroupInfo = async (userUid: string, roomId: string, updateData: GroupUpdateRequest): Promise<GroupUpdateResponse> => {
+	return customFetch({
+		pathName: `users/${userUid}/groups/${roomId}`,
+		method: 'PATCH',
+		body: updateData
+	});
+};
+
+export const deleteGroup = async (userUid: string, roomId: string): Promise<GroupDeleteResponse> => {
+	return customFetch({
+		pathName: `users/${userUid}/groups/${roomId}`,
+		method: 'DELETE'
 	});
 };

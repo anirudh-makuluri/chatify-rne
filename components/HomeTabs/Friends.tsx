@@ -8,14 +8,36 @@ import FetchedUser from '../FetchedUser';
 import { useUser } from '~/app/providers';
 import FriendRequest from '../FriendRequest';
 import CustomSnackbar from '../CustomSnackbar';
+import { useAppSelector } from '~/redux/store';
 
 export default function Friends() {
 	const { user } = useUser();
+	const userPresence = useAppSelector(state => state.chat.userPresence);
 
 	const [searchUser, setSearchUser] = useState<string>("");
 	const [fetchedUsers, setFetchedUsers] = useState<TUser[]>([]);
 	const [openFetchedUsersModal, setOpenFetchedUsersModal] = useState(false);
 	const [snackbarMsg, setSnackbarMsg] = useState("");
+
+	// Helper functions for presence
+	const getUserPresence = (uid: string) => {
+		return userPresence[uid];
+	};
+
+	const formatLastSeen = (lastSeen: number | null) => {
+		if (!lastSeen) return 'Never';
+		
+		const now = Date.now();
+		const diff = now - lastSeen;
+		const minutes = Math.floor(diff / 60000);
+		const hours = Math.floor(minutes / 60);
+		const days = Math.floor(hours / 24);
+
+		if (minutes < 1) return 'Just now';
+		if (minutes < 60) return `${minutes}m ago`;
+		if (hours < 24) return `${hours}h ago`;
+		return `${days}d ago`;
+	};
 
 	function handleSubmitSearch() {
 		if (searchUser.trim().length == 0) return;
@@ -38,7 +60,7 @@ export default function Friends() {
 	const renderEmptyState = () => (
 		<View className="justify-center items-center px-8 py-16">
 			<View className="w-24 h-24 bg-green-100 rounded-full items-center justify-center mb-6">
-				<Icon source="account-group" size={48} color="#10b981" />
+				<Icon source="account-multiple" size={48} color="#10b981" />
 			</View>
 			<Text className="text-xl font-bold text-gray-900 text-center mb-2">
 				No Friend Requests
@@ -100,6 +122,50 @@ export default function Friends() {
 						</View>
 					</View>
 				</View>
+
+				{/* Friend List */}
+				{user?.friend_list && user.friend_list.length > 0 && (
+					<View className="flex-1 mb-4">
+						<View className="px-4 py-3 bg-white border-b border-gray-100">
+							<Text variant="titleSmall" className="text-gray-700 font-semibold">
+								Friends ({user.friend_list.length})
+							</Text>
+						</View>
+						<FlatList
+							data={user.friend_list}
+							renderItem={({ item, index }) => {
+								const presence = getUserPresence(item.uid);
+								return (
+									<Card className="mx-4 my-1">
+										<View className="flex-row items-center p-3">
+											<View className="relative">
+												<Avatar.Image 
+													size={48} 
+													source={{ uri: item.photo_url }} 
+												/>
+												<View className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${
+													presence?.is_online ? 'bg-green-500' : 'bg-gray-400'
+												}`} />
+											</View>
+											<View className="flex-1 ml-3">
+												<Text variant="titleMedium" className="font-semibold">
+													{item.name}
+												</Text>
+												<Text variant="bodySmall" className="text-gray-500">
+													{presence?.is_online 
+														? 'Online' 
+														: `Last seen ${formatLastSeen(presence?.last_seen || null)}`
+													}
+												</Text>
+											</View>
+										</View>
+									</Card>
+								);
+							}}
+							showsVerticalScrollIndicator={false}
+						/>
+					</View>
+				)}
 
 				{/* Friend Requests */}
 				{user?.received_friend_requests?.length === 0 ? (
