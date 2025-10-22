@@ -3,8 +3,8 @@ import { FlatList, Image, View, Alert, ScrollView } from 'react-native'
 import { Avatar, Button, Card, Text, TextInput, useTheme, Icon, ActivityIndicator, IconButton, Menu, Portal, Dialog, ProgressBar, Chip } from 'react-native-paper'
 import { useUser } from '~/app/providers';
 import { ChatMessage } from '~/lib/types';
-import { setActiveRoomId, setLoadingMore } from '~/redux/chatSlice';
-import { sendMessageToServer, loadChatHistory, requestConversationSummaryAction, analyzeMessageSentimentAction, getSmartRepliesAction, sendAIChatRequestAction } from '~/redux/socketSlice';
+import { setActiveRoomId, setLoadingMore, setOfflineMode } from '~/redux/chatSlice';
+import { sendMessageToServer, loadChatHistory, requestConversationSummaryAction, analyzeMessageSentimentAction, getSmartRepliesAction, sendAIChatRequestAction, loadOfflineMessagesForRoom, syncPendingMessages } from '~/redux/socketSlice';
 import { useAppDispatch, useAppSelector } from '~/redux/store';
 import ChatBubble from '../components/ChatBubble';
 import GroupChat from '../components/GroupChat';
@@ -18,11 +18,12 @@ export default function Room() {
 	const activeChatRoomId = useAppSelector(state => state.chat.activeChatRoomId);
 	const activeRoom = useAppSelector(state => state.chat.rooms[activeChatRoomId]);
 	const userPresence = useAppSelector(state => state.chat.userPresence);
+	const isOffline = useAppSelector(state => state.chat.isOffline);
 	const textInputRef = useRef<any>(null); //Fix this
 
 	const dispatch = useAppDispatch();
 
-	const user = useUser()?.user;
+	const { user, isOffline: userIsOffline } = useUser() || {};
 
 	const [input, setInput] = useState<string>("");
 	const [attachMenuVisible, setAttachMenuVisible] = useState(false);
@@ -39,6 +40,26 @@ export default function Room() {
 	const [showSmartReplies, setShowSmartReplies] = useState(false);
 	const [showGroupManagement, setShowGroupManagement] = useState(false);
 	const [showGroupMembers, setShowGroupMembers] = useState(false);
+
+	// Handle offline mode and load offline messages
+	useEffect(() => {
+		if (activeChatRoomId && activeRoom) {
+			// Update offline mode in Redux
+			dispatch(setOfflineMode(userIsOffline || false));
+			
+			// Load offline messages if in offline mode
+			if (userIsOffline) {
+				dispatch(loadOfflineMessagesForRoom(activeChatRoomId));
+			}
+		}
+	}, [activeChatRoomId, userIsOffline]);
+
+	// Sync pending messages when coming back online
+	useEffect(() => {
+		if (!userIsOffline && !isOffline) {
+			dispatch(syncPendingMessages());
+		}
+	}, [userIsOffline, isOffline]);
 
 	if(activeChatRoomId == '' || activeRoom == null) {
 		return null;
@@ -352,7 +373,18 @@ export default function Room() {
 						<View className='flex-row items-center flex-1'>
 							<Avatar.Image size={48} className='mr-2' source={{ uri: activeRoom?.photo_url }} />
 							<View className='flex-1'>
-								<Text className='font-semibold'>{activeRoom.name}</Text>
+								<View className='flex-row items-center'>
+									<Text className='font-semibold'>{activeRoom.name}</Text>
+									{userIsOffline && (
+										<Chip 
+											icon="wifi-off" 
+											className='ml-2 bg-orange-100'
+											textStyle={{ fontSize: 10 }}
+										>
+											Offline
+										</Chip>
+									)}
+								</View>
 								{activeRoom.is_group ? (
 									<Text className='text-sm text-gray-600'>
 										{activeRoom.members?.length || 0} members
@@ -450,6 +482,18 @@ export default function Room() {
 				</View>
 			)}
 			
+			{/* Offline message indicator */}
+			{userIsOffline && (
+				<View className='px-4 py-2 bg-orange-50 border-t border-orange-200'>
+					<View className='flex-row items-center'>
+						<Icon source="wifi-off" size={16} color='#ea580c' />
+						<Text variant='bodySmall' className='text-orange-700 flex-1 ml-2'>
+							You're offline. Messages will be sent when connection is restored.
+						</Text>
+					</View>
+				</View>
+			)}
+
 			<View className='flex flex-row items-center w-full gap-2 p-2'>
 				<Menu
 					visible={attachMenuVisible}
@@ -459,7 +503,7 @@ export default function Room() {
 							icon="attachment"
 							size={24}
 							onPress={() => setAttachMenuVisible(true)}
-							disabled={uploading}
+							disabled={uploading || userIsOffline}
 						/>
 					}
 				>
@@ -478,7 +522,7 @@ export default function Room() {
 							setShowSmartReplies(false);
 						}
 					}}
-					placeholder="Type a message..."
+					placeholder={userIsOffline ? "Type a message (offline)..." : "Type a message..."}
 					style={{ flex: 1 }}
 					disabled={uploading}
 				/>

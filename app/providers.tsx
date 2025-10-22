@@ -5,24 +5,30 @@ import ReduxProvider from '../redux/redux-provider';
 import { MD3LightTheme as DefaultTheme, PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { offlineStorage } from '../lib/offlineStorage';
+import NetInfo from '@react-native-community/netinfo';
 
 
 type TUserContext = {
 	user: TAuthUser | null,
 	isLoading: boolean,
 	isLoggingOut: boolean,
+	isOffline: boolean,
 	login: Function,
 	logout: Function,
-	updateUser: Function
+	updateUser: Function,
+	loginOffline: Function
 }
 
 const UserContext = createContext<TUserContext>({
 	user: null,
 	isLoading: true,
 	isLoggingOut: false,
+	isOffline: false,
 	login: () => { },
 	logout: () => { },
-	updateUser: () => { }
+	updateUser: () => { },
+	loginOffline: () => { }
 });
 
 const theme = {
@@ -38,31 +44,60 @@ export function Providers({ children }: { children: ReactNode }) {
 	const [user, setUser] = useState<TAuthUser | null>(null);
 	const [isLoading, setLoading] = useState<boolean>(true);
 	const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
+	const [isOffline, setIsOffline] = useState<boolean>(false);
 
 	useEffect(() => {
+		// Check network status
+		const unsubscribe = NetInfo.addEventListener(state => {
+			setIsOffline(!state.isConnected);
+		});
+
+		// Initialize login
 		if (!user) {
 			login();
 		}
+
+		return () => unsubscribe();
 	}, []);
 
-	function login() {
+	async function login() {
 		setLoading(true);
-		customFetch({ pathName: 'session' })
-			.then((data) => {
-				if (data.success) {
-					setUser(data.user)
-				}
-			})
-			.catch(error => {
-				console.warn('No valid session found:', error);
-				// User will stay null and be redirected to auth
-			})
-			.finally(() => {
-				setLoading(false);
-			})
+		
+		try {
+			// Try online login first
+			const data = await customFetch({ pathName: 'session' });
+			if (data.success) {
+				setUser(data.user);
+				// Save user data for offline access
+				await offlineStorage.saveUserData(data.user);
+				await offlineStorage.setOfflineMode(false);
+			}
+		} catch (error) {
+			console.warn('Online login failed, trying offline:', error);
+			
+			// Try offline login
+			await loginOffline();
+		} finally {
+			setLoading(false);
+		}
 	}
 
-	function updateUser(newData: Partial<TAuthUser>) {
+	async function loginOffline() {
+		try {
+			const offlineUserData = await offlineStorage.getUserData();
+			if (offlineUserData && offlineUserData.user) {
+				setUser(offlineUserData.user);
+				await offlineStorage.setOfflineMode(true);
+				console.log('Logged in offline with cached user data');
+			} else {
+				console.log('No offline user data available');
+			}
+		} catch (error) {
+			console.error('Offline login failed:', error);
+		}
+	}
+
+	async function updateUser(newData: Partial<TAuthUser>) {
 		if (!user) return;
 
 		const newUserData: TAuthUser = {
@@ -77,29 +112,45 @@ export function Providers({ children }: { children: ReactNode }) {
 		};
 
 		setUser(newUserData);
+		
+		// Update offline storage
+		try {
+			await offlineStorage.saveUserData(newUserData);
+		} catch (error) {
+			console.error('Failed to update offline user data:', error);
+		}
 	}
 
-	function logout() {
+	async function logout() {
 		setIsLoggingOut(true);
-		customFetch({
-			pathName: 'session',
-		}).then(res => {
-			console.log('Logged out:', res);
+		
+		try {
+			// Try online logout first
+			await customFetch({ pathName: 'session' });
+			console.log('Logged out online');
+		} catch (error) {
+			console.error('Online logout failed:', error);
+			// Continue with local logout even if backend call fails
+		}
+		
+		try {
+			// Clear offline data
+			await offlineStorage.clearUserData();
 			setUser(null);
 			router.replace('/auth');
-		}).catch(error => {
-			console.error('Logout error:', error);
-			// Still clear user locally even if backend call fails
+		} catch (error) {
+			console.error('Failed to clear offline data:', error);
+			// Still clear user and redirect
 			setUser(null);
 			router.replace('/auth');
-		}).finally(() => {
+		} finally {
 			setIsLoggingOut(false);
-		})
+		}
 	}
 
 	return (
 		<SafeAreaProvider>
-			<UserContext.Provider value={{ user, login, logout, isLoading, isLoggingOut, updateUser }}>
+			<UserContext.Provider value={{ user, login, logout, isLoading, isLoggingOut, isOffline, updateUser, loginOffline }}>
 				<ReduxProvider>
 					<PaperProvider theme={theme}>
 						{children}

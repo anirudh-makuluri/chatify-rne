@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { customFetch } from '~/lib/utils';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { offlineStorage } from '~/lib/offlineStorage';
 
 const app = initializeApp(config.firebaseConfig);
 const auth = initializeAuth(app, {
@@ -27,12 +28,13 @@ provider.setCustomParameters({ prompt: "select_account" })
 
 
 export default function Page() {
-	const { user, isLoading, login } = useUser();
+	const { user, isLoading, login, loginOffline } = useUser();
 	const [isSignIn, setSignIn] = useState(true);
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [snackbarMsg, setSnackbarMsg] = useState("");
 	const [isAuthenticating, setIsAuthenticating] = useState(false);
+	const [hasOfflineData, setHasOfflineData] = useState(false);
 
 	useEffect(() => {
 		GoogleSignin.configure({
@@ -46,12 +48,18 @@ export default function Page() {
 			return;
 		}
 
-		customFetch({
-			pathName: ''
-		}).then(res => {
-			console.log(res);
-		})
+		// Check for offline data
+		checkOfflineData();
 	}, [user, isLoading]);
+
+	const checkOfflineData = async () => {
+		try {
+			const offlineUserData = await offlineStorage.getUserData();
+			setHasOfflineData(!!offlineUserData);
+		} catch (error) {
+			console.error('Failed to check offline data:', error);
+		}
+	};
 
 	async function authWithEmailAndPassword() {
 		if (email == null || email.trim() == "" || password == null || password.trim() == "") {
@@ -139,6 +147,18 @@ export default function Page() {
 		})
 	}
 
+	async function handleOfflineLogin() {
+		setIsAuthenticating(true);
+		try {
+			await loginOffline();
+			setSnackbarMsg("Logged in offline with cached data");
+		} catch (error) {
+			setSnackbarMsg("Failed to login offline");
+		} finally {
+			setIsAuthenticating(false);
+		}
+	}
+
 
 
 	return (
@@ -156,6 +176,24 @@ export default function Page() {
 					</Card>
 				) : (
 					<>
+						{hasOfflineData && (
+							<>
+								<Button 
+									className='w-1/2 mb-4' 
+									onPress={handleOfflineLogin} 
+									mode='outlined'
+									disabled={isAuthenticating}
+									icon="wifi-off"
+								>
+									Continue Offline
+								</Button>
+								<View className='flex flex-row items-center justify-center gap-2 mb-4'>
+									<View className='bg-primary h-[1px] w-1/3'></View>
+									<Text>OR</Text>
+									<View className='bg-primary h-[1px] w-1/3'></View>
+								</View>
+							</>
+						)}
 						<Button 
 							className='w-1/2' 
 							onPress={authWithGoogle} 

@@ -6,8 +6,8 @@ import {
 import { useUser } from './providers';
 import { router } from 'expo-router';
 import { useAppDispatch, useAppSelector } from '~/redux/store';
-import { initAndJoinSocketRooms, joinSocketRoom } from '~/redux/socketSlice';
-import { addMessage, clearRoomData, joinChatRoom, editMessageInChat, deleteMessageFromChat, toggleReaction, updateUserPresence } from '~/redux/chatSlice';
+import { initAndJoinSocketRooms, joinSocketRoom, syncPendingMessages } from '~/redux/socketSlice';
+import { addMessage, clearRoomData, joinChatRoom, editMessageInChat, deleteMessageFromChat, toggleReaction, updateUserPresence, setOfflineMode } from '~/redux/chatSlice';
 import { ChatMessage, TUser, TRoomData } from '~/lib/types';
 import { genRoomId } from '~/lib/utils';
 import RoomList from '~/components/HomeTabs/RoomList';
@@ -16,7 +16,7 @@ import Friends from '~/components/HomeTabs/Friends';
 
 
 export default function Page() {
-	const { user, isLoading, updateUser, logout } = useUser();
+	const { user, isLoading, updateUser, logout, isOffline } = useUser();
 	const socket = useAppSelector(state => state.socket.socket);
 	const activeChatRoomId = useAppSelector(state => state.chat.activeChatRoomId);
 	const dispatch = useAppDispatch();
@@ -43,14 +43,23 @@ export default function Page() {
 
 		if (!user) return;
 
-		const roomIds: string[] = Array.isArray(user.rooms) ? user.rooms.map(u => u.roomId) : [];
+		// Update offline mode in Redux
+		dispatch(setOfflineMode(isOffline || false));
 
-		dispatch(initAndJoinSocketRooms(roomIds, {
-			email: user.email,
-			name: user.name,
-			photo_url: user.photo_url,
-			uid: user.uid
-		}));
+		// Only initialize socket if online
+		if (!isOffline) {
+			const roomIds: string[] = Array.isArray(user.rooms) ? user.rooms.map(u => u.roomId) : [];
+
+			dispatch(initAndJoinSocketRooms(roomIds, {
+				email: user.email,
+				name: user.name,
+				photo_url: user.photo_url,
+				uid: user.uid
+			}));
+
+			// Sync pending messages when coming back online
+			dispatch(syncPendingMessages());
+		}
 
 		if (Array.isArray(user.rooms)) {
 			user.rooms.forEach((roomData) => {
@@ -58,7 +67,7 @@ export default function Page() {
 			});
 		}
 
-	}, [user, isLoading]);
+	}, [user, isLoading, isOffline]);
 
 	useEffect(() => {
 		if (!socket) return;

@@ -2,6 +2,7 @@ import { ChatDate, ChatMessage, TRoomData, PresenceUpdate } from "../lib/types";
 import { formatChatMessages } from "../lib/utils";
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from '@reduxjs/toolkit'
+import { offlineStorage } from '../lib/offlineStorage';
 
 export interface IChatState {
 	activeChatRoomId: string,
@@ -13,13 +14,15 @@ export interface IChatState {
 			is_online: boolean;
 			last_seen: number | null;
 		}
-	}
+	},
+	isOffline: boolean
 }
 
 const initialState: IChatState = {
 	activeChatRoomId: '',
 	rooms: {},
-	userPresence: {}
+	userPresence: {},
+	isOffline: false
 }
 
 export const chatSlice = createSlice({
@@ -296,6 +299,59 @@ export const chatSlice = createSlice({
 					last_seen: presence.last_seen
 				};
 			});
+		},
+		// Offline mode actions
+		setOfflineMode: (state, action: PayloadAction<boolean>) => {
+			state.isOffline = action.payload;
+		},
+		loadOfflineMessages: (state, action: PayloadAction<{ roomId: string; messages: ChatMessage[] }>) => {
+			const { roomId, messages } = action.payload;
+			if (state.rooms[roomId]) {
+				state.rooms[roomId].messages = formatChatMessages(messages);
+			}
+		},
+		saveMessageOffline: (state, action: PayloadAction<ChatMessage>) => {
+			// This will be handled by the thunk, but we can add local state if needed
+			const message = action.payload;
+			if (state.rooms[message.roomId]) {
+				// Add message locally for immediate UI update
+				const chatMessages = state.rooms[message.roomId].messages;
+				
+				// Check for duplicates
+				if(chatMessages.findIndex(msg => !msg.isDate && msg.id == message.id) != -1) return state;
+
+				let lastMessage = chatMessages[chatMessages.length - 1];
+
+				const newChatDate: ChatDate = {
+					time: 'Today',
+					isDate: true,
+				}
+
+				if (lastMessage == null) {
+					message.isConsecutiveMessage = false;
+					chatMessages.push(newChatDate);
+				} else {
+					if (lastMessage.isDate) lastMessage = chatMessages[chatMessages.length - 2];
+
+					message.isConsecutiveMessage = false;
+					if (lastMessage.userUid == message.userUid) {
+						message.isConsecutiveMessage = true;
+					}
+
+					const newMessageDate = new Date(message.time);
+					const lastMessageDate = new Date(lastMessage.time);
+
+					const isToday = newMessageDate.getDate() === lastMessageDate.getDate() &&
+						newMessageDate.getMonth() === lastMessageDate.getMonth() &&
+						newMessageDate.getFullYear() === lastMessageDate.getFullYear();
+
+					if (!isToday) {
+						chatMessages.push(newChatDate);
+					}
+				}
+
+				state.rooms[message.roomId].messages = [...chatMessages, message];
+			}
 		}
 	}
 })
@@ -316,6 +372,9 @@ export const {
 	updateGroupInfo,
 	removeGroupRoom,
 	updateUserPresence,
-	updateMultipleUserPresence
+	updateMultipleUserPresence,
+	setOfflineMode,
+	loadOfflineMessages,
+	saveMessageOffline
 } = chatSlice.actions
 export const chatReducer = chatSlice.reducer

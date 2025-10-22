@@ -5,6 +5,8 @@ import { AppThunk } from "./store";
 import { ChatMessage, TAuthUser, TUser, AIResponse, AISummaryResponse, AISentimentResponse, AISmartRepliesResponse, PresenceUpdate } from "../lib/types";
 import { globals } from "../globals";
 import { sendAIChatRequest, requestConversationSummary, analyzeMessageSentiment, getSmartReplies } from "../lib/utils";
+import { offlineStorage } from '../lib/offlineStorage';
+import { addMessage, loadOfflineMessages } from './chatSlice';
 
 interface SocketState {
 	socket: Socket | null
@@ -60,10 +62,15 @@ export const initAndJoinSocketRooms = (rooms: string[], user: TUser): AppThunk =
 	});
 }
 
-export const sendMessageToServer = (message: ChatMessage): AppThunk => (dispatch, getState) => {
+export const sendMessageToServer = (message: ChatMessage): AppThunk => async (dispatch, getState) => {
 	const { socket } = getState().socket;
-	if (socket) {
-		// Map chatId to id for backend compatibility
+	const { isOffline } = getState().chat;
+	
+	// Always add message to local state first for immediate UI update
+	dispatch(addMessage(message));
+	
+	if (socket && !isOffline) {
+		// Online: Send to server
 		const backendMessage = {
 			id: message.id,
 			roomId: message.roomId,
@@ -77,6 +84,15 @@ export const sendMessageToServer = (message: ChatMessage): AppThunk => (dispatch
 			isMsgSaved: message.isMsgSaved || false
 		};
 		socket.emit('chat_event_client_to_server', backendMessage);
+	} else {
+		// Offline: Save message for later sync
+		try {
+			await offlineStorage.savePendingMessage(message);
+			await offlineStorage.saveMessagesForRoom(message.roomId, [message]);
+			console.log('Message saved offline for later sync');
+		} catch (error) {
+			console.error('Failed to save message offline:', error);
+		}
 	}
 };
 
@@ -216,5 +232,38 @@ export const getSmartRepliesAction = (message: string, roomId?: string): AppThun
 	} catch (error) {
 		console.error('Smart Replies failed:', error);
 		throw error;
+	}
+};
+
+// Offline message loading
+export const loadOfflineMessagesForRoom = (roomId: string): AppThunk => async (dispatch, getState) => {
+	try {
+		const messages = await offlineStorage.getMessagesForRoom(roomId);
+		if (messages && messages.length > 0) {
+			dispatch(loadOfflineMessages({ roomId, messages }));
+			console.log(`Loaded ${messages.length} offline messages for room ${roomId}`);
+		}
+	} catch (error) {
+		console.error('Failed to load offline messages:', error);
+	}
+};
+
+// Sync pending messages when back online
+export const syncPendingMessages = (): AppThunk => async (dispatch, getState) => {
+	try {
+		const pendingMessages = await offlineStorage.getPendingMessages();
+		if (pendingMessages.length > 0) {
+			console.log(`Syncing ${pendingMessages.length} pending messages`);
+			
+			// Send each pending message to server
+			for (const pendingMessage of pendingMessages) {
+				dispatch(sendMessageToServer(pendingMessage.message));
+			}
+			
+			// Clear pending messages after sync
+			await offlineStorage.clearPendingMessages();
+		}
+	} catch (error) {
+		console.error('Failed to sync pending messages:', error);
 	}
 };
