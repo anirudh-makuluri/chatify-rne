@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react'
-import { FlatList, View } from 'react-native';
-import {
-	BottomNavigation
-} from 'react-native-paper'
+import { View } from 'react-native';
+import { Appbar } from 'react-native-paper'
 import { useUser } from './providers';
 import { router } from 'expo-router';
 import { useAppDispatch, useAppSelector } from '~/redux/store';
 import { initAndJoinSocketRooms, joinSocketRoom, syncPendingMessages } from '~/redux/socketSlice';
 import { addMessage, clearRoomData, joinChatRoom, editMessageInChat, deleteMessageFromChat, toggleReaction, updateUserPresence, setOfflineMode } from '~/redux/chatSlice';
+import { useDispatch } from 'react-redux';
 import { ChatMessage, TUser, TRoomData } from '~/lib/types';
 import { genRoomId } from '~/lib/utils';
 import RoomList from '~/components/HomeTabs/RoomList';
 import Settings from '~/components/HomeTabs/Settings';
 import Friends from '~/components/HomeTabs/Friends';
+import HamburgerMenu from '~/components/HamburgerMenu';
+import GroupChat from '~/components/GroupChat';
 
 
 export default function Page() {
@@ -20,19 +21,25 @@ export default function Page() {
 	const socket = useAppSelector(state => state.socket.socket);
 	const activeChatRoomId = useAppSelector(state => state.chat.activeChatRoomId);
 	const dispatch = useAppDispatch();
-	const [routes] = useState([
-		{ key: 'home', title: 'Home', focusedIcon: 'home', unfocusedIcon: 'home-outline' },
-		{ key: 'friends', title: 'Friends', focusedIcon: 'account-multiple-plus', unfocusedIcon: 'account-multiple-plus-outline'  },
-		{ key: 'settings', title: 'Settings', focusedIcon: 'cog', unfocusedIcon: 'cog-outline' },
-		
-	]);
-	const [index, setIndex] = useState(0);
+	const reduxDispatch = useDispatch();
+	const [currentView, setCurrentView] = useState<'home' | 'friends' | 'profile'>('home');
+	const [showGroupModal, setShowGroupModal] = useState(false);
 
-	const renderScene = BottomNavigation.SceneMap({
-		home: RoomList,
-		friends: Friends,
-		settings: Settings,		
-	});
+	const renderCurrentView = () => {
+		switch (currentView) {
+			case 'friends':
+				return <Friends />;
+			case 'profile':
+				return <Settings />;
+			default:
+				return <RoomList />;
+		}
+	};
+
+	const handleLogout = () => {
+		reduxDispatch(clearRoomData());
+		logout();
+	};
 
 
 	useEffect(() => {
@@ -165,19 +172,25 @@ export default function Page() {
 	}, [socket]);
 
 	return (
-		<BottomNavigation
-			navigationState={{ index, routes }}
-			onIndexChange={setIndex}
-			renderScene={renderScene}
-			activeColor="#3b82f6"
-			inactiveColor="#6b7280"
-			barStyle={{ 
-				backgroundColor: '#ffffff',
-				borderTopWidth: 1,
-				borderTopColor: '#e5e7eb',
-				paddingBottom: 8,
-				paddingTop: 8
-			}}
-		/>
+		<View style={{ flex: 1 }}>
+			<Appbar.Header style={{ backgroundColor: '#ffffff', elevation: 2 }}>
+				<HamburgerMenu 
+					onHomePress={() => setCurrentView('home')}
+					onFriendsPress={() => setCurrentView('friends')}
+					onUserProfilePress={() => setCurrentView('profile')}
+					onCreateGroupPress={() => setShowGroupModal(true)}
+					onLogoutPress={handleLogout}
+				/>
+				<Appbar.Content title="Chatify" titleStyle={{ color: '#111827', fontWeight: 'bold' }} />
+			</Appbar.Header>
+			{renderCurrentView()}
+			
+			{/* Group Creation Modal */}
+			{showGroupModal && (
+				<GroupChat 
+					onClose={() => setShowGroupModal(false)}
+				/>
+			)}
+		</View>
 	)
 }

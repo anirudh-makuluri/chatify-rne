@@ -2,15 +2,12 @@ import React, { useState } from 'react'
 import { View, ScrollView, Alert } from 'react-native';
 import { Avatar, Button, Text, useTheme, Card, IconButton, TextInput, ActivityIndicator } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useDispatch } from 'react-redux';
 import { useUser } from '~/app/providers'
-import { clearRoomData } from '~/redux/chatSlice';
 import { useAppSelector } from '~/redux/store';
 import { updateUserName, updateUserProfilePicture, uploadProfilePicture } from '~/lib/utils';
 import * as ImagePicker from 'expo-image-picker';
 export default function Settings() {
-	const { user, logout, updateUser, isLoggingOut } = useUser();
-	const dispatch = useDispatch();
+	const { user, updateUser } = useUser();
 	const theme = useTheme();
 	const socket = useAppSelector(state => state.socket.socket);
 
@@ -67,10 +64,6 @@ export default function Settings() {
 		}
 	};
 
-	function handleLogoutBtnPress() {
-		dispatch(clearRoomData());
-		logout();
-	}
 
 	return (
 		<SafeAreaView className="flex-1 bg-gray-50">
@@ -145,19 +138,6 @@ export default function Settings() {
 						</View>
 					</View>
 				)}
-				
-				<Button 
-					className='w-full' 
-					buttonColor="#ef4444" 
-					onPress={handleLogoutBtnPress} 
-					mode='contained'
-					style={{ borderRadius: 12, paddingVertical: 8 }}
-					textColor="white"
-					disabled={isLoggingOut}
-					loading={isLoggingOut}
-				>
-					{isLoggingOut ? "Logging out..." : "Log Out"}
-				</Button>
 			</View>
 		</SafeAreaView>
 	)

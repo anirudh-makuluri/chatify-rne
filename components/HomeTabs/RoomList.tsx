@@ -12,7 +12,7 @@ export default function RoomList() {
 	const [showCreateGroup, setShowCreateGroup] = useState(false);
 
 	const insets = useSafeAreaInsets();
-	const bottomPad = (insets.bottom || 0) + 180; // approximate BottomNavigation height
+	const bottomPad = insets.bottom || 0; // Only use safe area bottom padding
 
 	const filteredRooms = useMemo(() => {
 		if (!user?.rooms) return [];
@@ -56,19 +56,12 @@ export default function RoomList() {
 	);
 
 	return (
-		<SafeAreaView className="flex-1 bg-gray-50">
-			<View className="px-4 py-4 border-b border-gray-200">
+		<SafeAreaView style={{ flex: 1, backgroundColor: '#f9fafb' }}>
+			<View style={{ paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}>
 				<View className="flex-row items-center justify-between mb-4">
 					<Text className="text-2xl font-bold text-gray-900">
 						Chats
 					</Text>
-					<IconButton
-						icon="account-multiple-plus"
-						size={24}
-						iconColor="#3b82f6"
-						onPress={() => setShowCreateGroup(true)}
-						style={{ backgroundColor: '#f0f9ff' }}
-					/>
 				</View>
 				
 				<View className="flex-row items-center gap-3 mb-2">
@@ -98,7 +91,7 @@ export default function RoomList() {
 			</View>
 			
 			{(() => {
-				const roomsToShow = searchQuery.length > 0 ? filteredRooms : (user?.rooms || []);
+				const roomsToShow = filteredRooms;
 				
 				// Debug: Show test room if no rooms
 				if (roomsToShow.length === 0 && !searchQuery) {
@@ -123,14 +116,19 @@ export default function RoomList() {
 				}
 				
 				return (
-					<FlatList
-						data={roomsToShow}
-						renderItem={({ item, index }) => <RoomDisplayItem roomData={item} key={index} />}
-						className=""
-						showsVerticalScrollIndicator={true}
-						contentContainerStyle={{ paddingVertical: 8, paddingBottom: bottomPad }}
-						keyExtractor={(item, index) => item.roomId || index.toString()}
-					/>
+					<View style={{ flex: 1 }}>
+						<FlatList
+							data={roomsToShow}
+							renderItem={({ item, index }) => <RoomDisplayItem roomData={item} key={index} />}
+							showsVerticalScrollIndicator={true}
+							contentContainerStyle={{ 
+								paddingVertical: 8, 
+								paddingBottom: Math.max(bottomPad, 16) // Ensure minimum padding
+							}}
+							keyExtractor={(item, index) => item.roomId || index.toString()}
+							style={{ flex: 1 }}
+						/>
+					</View>
 				);
 			})()}
 		
