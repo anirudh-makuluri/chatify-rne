@@ -2,6 +2,7 @@ import { Action, configureStore, ThunkAction } from '@reduxjs/toolkit'
 import { useDispatch, TypedUseSelectorHook, useSelector } from 'react-redux'
 import { chatReducer } from './chatSlice';
 import { socketReducer } from './socketSlice';
+import { scheduledMessageReducer } from './scheduledMessageSlice';
 
 export type AppThunk<ReturnType = void> = ThunkAction<
 	ReturnType,
@@ -11,7 +12,11 @@ export type AppThunk<ReturnType = void> = ThunkAction<
 >;
 
 export const store = configureStore({
-	reducer: { chat: chatReducer, socket: socketReducer },
+	reducer: { 
+		chat: chatReducer, 
+		socket: socketReducer, 
+		scheduledMessages: scheduledMessageReducer 
+	},
 	middleware: (getDefaultMiddleware) =>
 		getDefaultMiddleware({ serializableCheck: false })
 })

@@ -8,6 +8,8 @@ import { sendMessageToServer, loadChatHistory, requestConversationSummaryAction,
 import { useAppDispatch, useAppSelector } from '~/redux/store';
 import ChatBubble from '../components/ChatBubble';
 import GroupChat from '../components/GroupChat';
+import ScheduleMessageDialog from '../components/ScheduleMessageDialog';
+import ScheduledMessagesList from '../components/ScheduledMessagesList';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -40,6 +42,8 @@ export default function Room() {
 	const [showSmartReplies, setShowSmartReplies] = useState(false);
 	const [showGroupManagement, setShowGroupManagement] = useState(false);
 	const [showGroupMembers, setShowGroupMembers] = useState(false);
+	const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+	const [showScheduledMessages, setShowScheduledMessages] = useState(false);
 
 	// Handle offline mode and load offline messages
 	useEffect(() => {
@@ -408,6 +412,16 @@ export default function Room() {
 								onPress={() => setShowGroupMembers(true)}
 							/>
 						)}
+						<IconButton
+							icon="clock-outline"
+							size={24}
+							onPress={() => setShowScheduledMessages(true)}
+						/>
+						<IconButton
+							icon="clock-plus"
+							size={24}
+							onPress={() => setShowScheduleDialog(true)}
+						/>
 						<Menu
 							visible={aiMenuVisible}
 							onDismiss={() => setAiMenuVisible(false)}
@@ -665,6 +679,21 @@ export default function Room() {
 					onClose={() => setShowGroupManagement(false)}
 				/>
 			)}
+
+			{/* Schedule Message Dialog */}
+			<ScheduleMessageDialog
+				visible={showScheduleDialog}
+				onDismiss={() => setShowScheduleDialog(false)}
+				roomId={activeChatRoomId}
+				initialMessage={input}
+			/>
+
+			{/* Scheduled Messages List */}
+			<ScheduledMessagesList
+				roomId={activeChatRoomId}
+				visible={showScheduledMessages}
+				onClose={() => setShowScheduledMessages(false)}
+			/>
 		</SafeAreaView>
 	)
 }

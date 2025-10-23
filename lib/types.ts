@@ -163,3 +163,54 @@ export type PresenceUpdate = {
 	is_online: boolean;
 	last_seen: number | null;
 }
+
+// Scheduled Messages types
+export type ScheduledMessage = {
+	id: string;
+	userUid: string;
+	roomId: string;
+	message: string;
+	messageType: 'text' | 'image' | 'file' | 'audio' | 'video';
+	fileName?: string;
+	scheduledTime: Date;
+	createdAt: Date;
+	status: 'pending' | 'sent' | 'cancelled';
+	recurring: boolean;
+	recurringPattern?: 'daily' | 'weekly' | 'monthly';
+	timezone: string;
+	userName: string;
+	userPhoto: string;
+	sentAt?: Date;
+}
+
+export type CreateScheduledMessageRequest = {
+	roomId: string;
+	userUid: string;
+	message: string;
+	messageType: 'text' | 'image' | 'file' | 'audio' | 'video';
+	fileName?: string;
+	scheduledTime: string; // ISO string
+	recurring: boolean;
+	recurringPattern?: 'daily' | 'weekly' | 'monthly';
+	timezone: string;
+}
+
+export type UpdateScheduledMessageRequest = {
+	message?: string;
+	scheduledTime?: string; // ISO string
+	recurring?: boolean;
+	recurringPattern?: 'daily' | 'weekly' | 'monthly';
+	timezone?: string;
+}
+
+export type ScheduledMessageResponse = {
+	success: boolean;
+	scheduledMessage?: ScheduledMessage;
+	error?: string;
+}
+
+export type ScheduledMessagesListResponse = {
+	success: boolean;
+	scheduledMessages?: ScheduledMessage[];
+	error?: string;
+}

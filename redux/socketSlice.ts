@@ -2,11 +2,12 @@ import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from '@reduxjs/toolkit'
 import io, { Socket } from 'socket.io-client';
 import { AppThunk } from "./store";
-import { ChatMessage, TAuthUser, TUser, AIResponse, AISummaryResponse, AISentimentResponse, AISmartRepliesResponse, PresenceUpdate } from "../lib/types";
+import { ChatMessage, TAuthUser, TUser, AIResponse, AISummaryResponse, AISentimentResponse, AISmartRepliesResponse, PresenceUpdate, ScheduledMessage, CreateScheduledMessageRequest, UpdateScheduledMessageRequest, ScheduledMessageResponse, ScheduledMessagesListResponse } from "../lib/types";
 import { globals } from "../globals";
 import { sendAIChatRequest, requestConversationSummary, analyzeMessageSentiment, getSmartReplies } from "../lib/utils";
 import { offlineStorage } from '../lib/offlineStorage';
 import { addMessage, loadOfflineMessages } from './chatSlice';
+import { setScheduledMessages, updateScheduledMessage as updateScheduledMessageAction, removeScheduledMessage } from './scheduledMessageSlice';
 
 interface SocketState {
 	socket: Socket | null
@@ -266,4 +267,68 @@ export const syncPendingMessages = (): AppThunk => async (dispatch, getState) =>
 	} catch (error) {
 		console.error('Failed to sync pending messages:', error);
 	}
+};
+
+// Scheduled Messages WebSocket actions
+export const scheduleMessage = (request: CreateScheduledMessageRequest): AppThunk => async (dispatch, getState) => {
+	const { socket } = getState().socket;
+	if (!socket) return;
+
+	socket.emit('schedule_message', { scheduledMessage: request }, (response: ScheduledMessageResponse) => {
+		if (response.success) {
+			console.log('Message scheduled successfully:', response);
+			// You can dispatch an action to update the Redux state here if needed
+		} else {
+			console.error('Failed to schedule message:', response.error);
+		}
+	});
+};
+
+export const getScheduledMessages = (userUid: string, roomId?: string): AppThunk => async (dispatch, getState) => {
+	const { socket } = getState().socket;
+	if (!socket) return;
+
+	socket.emit('get_scheduled_messages', { userUid, roomId }, (response: ScheduledMessagesListResponse) => {
+		if (response.success) {
+			console.log('Scheduled messages retrieved:', response);
+			// Dispatch action to update Redux state with scheduled messages
+			if (response.scheduledMessages) {
+				dispatch(setScheduledMessages({ roomId: roomId || 'all', messages: response.scheduledMessages }));
+			}
+		} else {
+			console.error('Failed to get scheduled messages:', response.error);
+		}
+	});
+};
+
+export const updateScheduledMessage = (scheduledMessageId: string, userUid: string, updates: UpdateScheduledMessageRequest): AppThunk => async (dispatch, getState) => {
+	const { socket } = getState().socket;
+	if (!socket) return;
+
+	socket.emit('update_scheduled_message', { scheduledMessageId, userUid, updates }, (response: ScheduledMessageResponse) => {
+		if (response.success) {
+			console.log('Scheduled message updated:', response);
+			// Dispatch action to update Redux state with updated message
+			if (response.scheduledMessage) {
+				dispatch(updateScheduledMessageAction(response.scheduledMessage));
+			}
+		} else {
+			console.error('Failed to update scheduled message:', response.error);
+		}
+	});
+};
+
+export const deleteScheduledMessage = (scheduledMessageId: string, userUid: string): AppThunk => async (dispatch, getState) => {
+	const { socket } = getState().socket;
+	if (!socket) return;
+
+	socket.emit('delete_scheduled_message', { scheduledMessageId, userUid }, (response: { success: boolean; error?: string }) => {
+		if (response.success) {
+			console.log('Scheduled message deleted:', response);
+			// Dispatch action to remove message from Redux state
+			dispatch(removeScheduledMessage({ roomId: 'all', messageId: scheduledMessageId }));
+		} else {
+			console.error('Failed to delete scheduled message:', response.error);
+		}
+	});
 };
