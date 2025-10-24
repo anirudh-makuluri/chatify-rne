@@ -9,6 +9,7 @@ import { addMessage, clearRoomData, joinChatRoom, editMessageInChat, deleteMessa
 import { useDispatch } from 'react-redux';
 import { ChatMessage, TUser, TRoomData } from '~/lib/types';
 import { genRoomId } from '~/lib/utils';
+import { useTheme } from '~/lib/themeContext';
 import RoomList from '~/components/HomeTabs/RoomList';
 import Settings from '~/components/HomeTabs/Settings';
 import Friends from '~/components/HomeTabs/Friends';
@@ -18,6 +19,7 @@ import GroupChat from '~/components/GroupChat';
 
 export default function Page() {
 	const { user, isLoading, updateUser, logout, isOffline } = useUser();
+	const { colors } = useTheme();
 	const socket = useAppSelector(state => state.socket.socket);
 	const activeChatRoomId = useAppSelector(state => state.chat.activeChatRoomId);
 	const dispatch = useAppDispatch();
@@ -172,8 +174,8 @@ export default function Page() {
 	}, [socket]);
 
 	return (
-		<View style={{ flex: 1 }}>
-			<Appbar.Header style={{ backgroundColor: '#ffffff', elevation: 2 }}>
+		<View style={{ flex: 1, backgroundColor: colors.background }}>
+			<Appbar.Header style={{ backgroundColor: colors.surface, elevation: 2 }}>
 				<HamburgerMenu 
 					onHomePress={() => setCurrentView('home')}
 					onFriendsPress={() => setCurrentView('friends')}
@@ -181,7 +183,7 @@ export default function Page() {
 					onCreateGroupPress={() => setShowGroupModal(true)}
 					onLogoutPress={handleLogout}
 				/>
-				<Appbar.Content title="Chatify" titleStyle={{ color: '#111827', fontWeight: 'bold' }} />
+				<Appbar.Content title="Chatify" titleStyle={{ color: colors.text, fontWeight: 'bold' }} />
 			</Appbar.Header>
 			{renderCurrentView()}
 			

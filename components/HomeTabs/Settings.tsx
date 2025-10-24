@@ -1,14 +1,16 @@
 import React, { useState } from 'react'
 import { View, ScrollView, Alert } from 'react-native';
-import { Avatar, Button, Text, useTheme, Card, IconButton, TextInput, ActivityIndicator } from 'react-native-paper'
+import { Avatar, Button, Text, useTheme, Card, IconButton, TextInput, ActivityIndicator, Switch, List } from 'react-native-paper'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useUser } from '~/app/providers'
 import { useAppSelector } from '~/redux/store';
 import { updateUserName, updateUserProfilePicture, uploadProfilePicture } from '~/lib/utils';
+import { useTheme as useAppTheme } from '~/lib/themeContext';
 import * as ImagePicker from 'expo-image-picker';
 export default function Settings() {
 	const { user, updateUser } = useUser();
 	const theme = useTheme();
+	const { isDark, toggleTheme, colors } = useAppTheme();
 	const socket = useAppSelector(state => state.socket.socket);
 
 	const [isEditingName, setIsEditingName] = useState(false);
@@ -66,7 +68,7 @@ export default function Settings() {
 
 
 	return (
-		<SafeAreaView className="flex-1 bg-gray-50">
+		<SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
 			<View className='px-6 py-8'>
 				{user && (
 					<View className='flex flex-col items-center gap-6 mb-8'>
@@ -74,7 +76,7 @@ export default function Settings() {
 							<Avatar.Image 
 								size={120} 
 								source={{ uri: user.photo_url }}
-								style={{ borderWidth: 4, borderColor: '#e5e7eb' }}
+								style={{ borderWidth: 4, borderColor: colors.border }}
 							/>
 							<IconButton
 								icon="camera"
@@ -86,7 +88,7 @@ export default function Settings() {
 									position: 'absolute', 
 									bottom: 0, 
 									right: 0,
-									backgroundColor: '#fff'
+									backgroundColor: colors.surface
 								}}
 							/>
 							{isUploading && (
@@ -122,7 +124,7 @@ export default function Settings() {
 								</View>
 							) : (
 								<View className="flex-row items-center gap-2">
-									<Text variant='headlineMedium' className="text-gray-900 font-bold">
+									<Text variant='headlineMedium' style={{ color: colors.text, fontWeight: 'bold' }}>
 										{user.name}
 									</Text>
 									<IconButton
@@ -132,12 +134,33 @@ export default function Settings() {
 									/>
 								</View>
 							)}
-							<Text variant='bodyLarge' className="text-gray-500">
+							<Text variant='bodyLarge' style={{ color: colors.textSecondary }}>
 								{user.email}
 							</Text>
 						</View>
 					</View>
 				)}
+
+				{/* Dark Mode Toggle */}
+				<Card style={{ marginTop: 24, backgroundColor: colors.surface }}>
+					<Card.Content>
+						<Text variant="titleMedium" style={{ color: colors.text, marginBottom: 16 }}>
+							Appearance
+						</Text>
+						
+						<List.Item
+							title="Dark Mode"
+							description={isDark ? "Dark theme is enabled" : "Light theme is enabled"}
+							left={(props) => <List.Icon {...props} icon="theme-light-dark" />}
+							right={() => (
+								<Switch
+									value={isDark}
+									onValueChange={toggleTheme}
+								/>
+							)}
+						/>
+					</Card.Content>
+				</Card>
 			</View>
 		</SafeAreaView>
 	)

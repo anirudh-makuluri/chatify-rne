@@ -18,6 +18,7 @@ import { customFetch } from '~/lib/utils';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { offlineStorage } from '~/lib/offlineStorage';
+import { useTheme } from '~/lib/themeContext';
 
 const app = initializeApp(config.firebaseConfig);
 const auth = initializeAuth(app, {
@@ -28,7 +29,8 @@ provider.setCustomParameters({ prompt: "select_account" })
 
 
 export default function Page() {
-	const { user, isLoading, login, loginOffline } = useUser();
+	const { user, isLoading, isLoggingOut, login, loginOffline } = useUser();
+	const { colors } = useTheme();
 	const [isSignIn, setSignIn] = useState(true);
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -43,14 +45,17 @@ export default function Page() {
 	}, []);
 
 	useEffect(() => {
-		if (user && !isLoading) {
+		// Only redirect if user exists, not loading, and not in the process of logging out
+		if (user && !isLoading && !isLoggingOut) {
 			router.replace('/home');
 			return;
 		}
 
-		// Check for offline data
-		checkOfflineData();
-	}, [user, isLoading]);
+		// Check for offline data only if not logging out
+		if (!isLoggingOut) {
+			checkOfflineData();
+		}
+	}, [user, isLoading, isLoggingOut]);
 
 	const checkOfflineData = async () => {
 		try {
@@ -162,15 +167,66 @@ export default function Page() {
 
 
 	return (
-		<SafeAreaView>
-			<View className='h-full flex flex-col justify-center items-center gap-4'>
-				{isAuthenticating ? (
-					<Card className='w-[80vw] py-10 px-6 items-center'>
+		<SafeAreaView style={{ backgroundColor: colors.background }}>
+			<View style={{ 
+				height: '100%', 
+				flexDirection: 'column', 
+				justifyContent: 'center', 
+				alignItems: 'center', 
+				gap: 16,
+				backgroundColor: colors.background
+			}}>
+				{isLoggingOut ? (
+					<Card style={{ 
+						width: '80%', 
+						paddingVertical: 40, 
+						paddingHorizontal: 24, 
+						alignItems: 'center',
+						backgroundColor: colors.surface
+					}}>
 						<ActivityIndicator size="large" color="#16A34A" />
-						<Text variant='titleMedium' className='mt-4 text-center'>
+						<Text style={{ 
+							fontSize: 16, 
+							fontWeight: '500', 
+							marginTop: 16, 
+							textAlign: 'center',
+							color: colors.text
+						}}>
+							Logging out...
+						</Text>
+						<Text style={{ 
+							fontSize: 12, 
+							marginTop: 8, 
+							textAlign: 'center',
+							color: colors.textSecondary
+						}}>
+							Please wait while we sign you out
+						</Text>
+					</Card>
+				) : isAuthenticating ? (
+					<Card style={{ 
+						width: '80%', 
+						paddingVertical: 40, 
+						paddingHorizontal: 24, 
+						alignItems: 'center',
+						backgroundColor: colors.surface
+					}}>
+						<ActivityIndicator size="large" color="#16A34A" />
+						<Text style={{ 
+							fontSize: 16, 
+							fontWeight: '500', 
+							marginTop: 16, 
+							textAlign: 'center',
+							color: colors.text
+						}}>
 							{isSignIn ? "Signing you in..." : "Creating your account..."}
 						</Text>
-						<Text variant='bodySmall' className='mt-2 text-center text-gray-600'>
+						<Text style={{ 
+							fontSize: 12, 
+							marginTop: 8, 
+							textAlign: 'center',
+							color: colors.textSecondary
+						}}>
 							Please wait while we authenticate with the server
 						</Text>
 					</Card>
@@ -179,7 +235,7 @@ export default function Page() {
 						{hasOfflineData && (
 							<>
 								<Button 
-									className='w-1/2 mb-4' 
+									style={{ width: '50%', marginBottom: 16 }} 
 									onPress={handleOfflineLogin} 
 									mode='outlined'
 									disabled={isAuthenticating}
@@ -187,38 +243,65 @@ export default function Page() {
 								>
 									Continue Offline
 								</Button>
-								<View className='flex flex-row items-center justify-center gap-2 mb-4'>
-									<View className='bg-primary h-[1px] w-1/3'></View>
-									<Text>OR</Text>
-									<View className='bg-primary h-[1px] w-1/3'></View>
+								<View style={{ 
+									flexDirection: 'row', 
+									alignItems: 'center', 
+									justifyContent: 'center', 
+									gap: 8, 
+									marginBottom: 16 
+								}}>
+									<View style={{ 
+										backgroundColor: '#3b82f6', 
+										height: 1, 
+										width: '33%' 
+									}}></View>
+									<Text style={{ color: colors.textSecondary }}>OR</Text>
+									<View style={{ 
+										backgroundColor: '#3b82f6', 
+										height: 1, 
+										width: '33%' 
+									}}></View>
 								</View>
 							</>
 						)}
 						<Button 
-							className='w-1/2' 
+							style={{ width: '50%' }} 
 							onPress={authWithGoogle} 
 							mode='contained'
 							disabled={isAuthenticating}
 						>
 							{isSignIn ? "Sign In" : "Sign Up"} With Google
 						</Button>
-						<View className='flex flex-row items-center justify-center gap-2'>
-							<View className='bg-primary h-[1px] w-1/3'></View>
-							<Text>OR</Text>
-							<View className='bg-primary h-[1px] w-1/3'></View>
+						<View style={{ 
+							flexDirection: 'row', 
+							alignItems: 'center', 
+							justifyContent: 'center', 
+							gap: 8 
+						}}>
+							<View style={{ 
+								backgroundColor: '#3b82f6', 
+								height: 1, 
+								width: '33%' 
+							}}></View>
+							<Text style={{ color: colors.textSecondary }}>OR</Text>
+							<View style={{ 
+								backgroundColor: '#3b82f6', 
+								height: 1, 
+								width: '33%' 
+							}}></View>
 						</View>
 						<TextInput
 							label="Email"
 							value={email}
 							mode='outlined'
-							className='w-[70vw]'
+							style={{ width: '70%' }}
 							onChangeText={text => setEmail(text.toLowerCase())}
 							disabled={isAuthenticating}
 						/>
 						<TextInput
 							label="Password"
 							value={password}
-							className='w-[70vw] '
+							style={{ width: '70%' }}
 							onChangeText={text => setPassword(text)}
 							mode='outlined'
 							disabled={isAuthenticating}
@@ -230,8 +313,10 @@ export default function Page() {
 						>
 							{isSignIn ? "Sign In" : "Sign Up"}
 						</Button>
-						<View className='flex flex-row items-center'>
-							<Text>{isSignIn ? "Don't have an account?" : "Already have an account?"}</Text>
+						<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+							<Text style={{ color: colors.text }}>
+								{isSignIn ? "Don't have an account?" : "Already have an account?"}
+							</Text>
 							<Button 
 								onPress={() => setSignIn(prevState => !prevState)}
 								disabled={isAuthenticating}

@@ -3,6 +3,7 @@ import { View, Modal, TouchableOpacity, Animated } from 'react-native';
 import { Text, IconButton, Avatar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useUser } from '~/app/providers';
+import { useTheme } from '~/lib/themeContext';
 
 interface HamburgerMenuProps {
   onHomePress: () => void;
@@ -14,6 +15,7 @@ interface HamburgerMenuProps {
 
 export default function HamburgerMenu({ onHomePress, onFriendsPress, onUserProfilePress, onCreateGroupPress, onLogoutPress }: HamburgerMenuProps) {
   const { user } = useUser();
+  const { colors } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [slideAnim] = useState(new Animated.Value(-300));
 
@@ -67,7 +69,7 @@ export default function HamburgerMenu({ onHomePress, onFriendsPress, onUserProfi
       <IconButton
         icon="menu"
         size={24}
-        iconColor="#374151"
+        iconColor={colors.text}
         onPress={openMenu}
         style={{ marginLeft: 8 }}
       />
@@ -90,21 +92,21 @@ export default function HamburgerMenu({ onHomePress, onFriendsPress, onUserProfi
               top: 0,
               bottom: 0,
               width: 300,
-              backgroundColor: 'white',
+              backgroundColor: colors.surface,
               transform: [{ translateX: slideAnim }],
             }}
           >
             <SafeAreaView style={{ flex: 1 }}>
               {/* Header */}
-              <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}>
+              <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: colors.border }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text variant="headlineSmall" style={{ fontWeight: 'bold', color: '#111827' }}>
+                  <Text variant="headlineSmall" style={{ fontWeight: 'bold', color: colors.text }}>
                     Menu
                   </Text>
                   <IconButton
                     icon="close"
                     size={20}
-                    iconColor="#6b7280"
+                    iconColor={colors.textSecondary}
                     onPress={closeMenu}
                   />
                 </View>
@@ -113,7 +115,7 @@ export default function HamburgerMenu({ onHomePress, onFriendsPress, onUserProfi
               {/* User Profile Section */}
               {user && (
                 <TouchableOpacity 
-                  style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}
+                  style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: colors.border }}
                   onPress={handleUserProfilePress}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -123,10 +125,10 @@ export default function HamburgerMenu({ onHomePress, onFriendsPress, onUserProfi
                       style={{ marginRight: 16 }}
                     />
                     <View style={{ flex: 1 }}>
-                      <Text variant="titleMedium" style={{ fontWeight: '600', color: '#111827' }}>
+                      <Text variant="titleMedium" style={{ fontWeight: '600', color: colors.text }}>
                         {user.name}
                       </Text>
-                      <Text variant="bodyMedium" style={{ color: '#6b7280', marginTop: 2 }}>
+                      <Text variant="bodyMedium" style={{ color: colors.textSecondary, marginTop: 2 }}>
                         {user.email}
                       </Text>
                     </View>
@@ -151,7 +153,7 @@ export default function HamburgerMenu({ onHomePress, onFriendsPress, onUserProfi
                     iconColor="#3b82f6"
                     style={{ margin: 0, marginRight: 12 }}
                   />
-                  <Text variant="titleMedium" style={{ color: '#111827', fontWeight: '500' }}>
+                  <Text variant="titleMedium" style={{ color: colors.text, fontWeight: '500' }}>
                     Home
                   </Text>
                 </TouchableOpacity>
@@ -171,7 +173,7 @@ export default function HamburgerMenu({ onHomePress, onFriendsPress, onUserProfi
                     iconColor="#3b82f6"
                     style={{ margin: 0, marginRight: 12 }}
                   />
-                  <Text variant="titleMedium" style={{ color: '#111827', fontWeight: '500' }}>
+                  <Text variant="titleMedium" style={{ color: colors.text, fontWeight: '500' }}>
                     Friends
                   </Text>
                 </TouchableOpacity>
@@ -191,7 +193,7 @@ export default function HamburgerMenu({ onHomePress, onFriendsPress, onUserProfi
                     iconColor="#3b82f6"
                     style={{ margin: 0, marginRight: 12 }}
                   />
-                  <Text variant="titleMedium" style={{ color: '#111827', fontWeight: '500' }}>
+                  <Text variant="titleMedium" style={{ color: colors.text, fontWeight: '500' }}>
                     Create Group
                   </Text>
                 </TouchableOpacity>

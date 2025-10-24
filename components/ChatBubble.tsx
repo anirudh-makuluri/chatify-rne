@@ -6,9 +6,11 @@ import { ChatDate, ChatMessage } from '~/lib/types';
 import { useAppDispatch } from '~/redux/store';
 import { editMessage, deleteMessage, addReaction } from '~/redux/socketSlice';
 import { editMessageInChat, deleteMessageFromChat, toggleReaction } from '~/redux/chatSlice';
+import { useTheme } from '~/lib/themeContext';
 
 export default function ChatBubble({ message, isGroup, roomId }: { message: ChatMessage | ChatDate, isGroup: boolean, roomId: string }) {
 	const user = useUser()?.user;
+	const { colors } = useTheme();
 	const dispatch = useAppDispatch();
 
 	const [menuVisible, setMenuVisible] = useState(false);
@@ -22,8 +24,21 @@ export default function ChatBubble({ message, isGroup, roomId }: { message: Chat
 
 	if (message.isDate) {
 		return (
-			<View className='flex flex-row justify-center self-center sticky top-0 w-1/3 border border-black rounded-md my-2'>
-				<Text>{message.time}</Text>
+			<View style={{ 
+				flexDirection: 'row', 
+				justifyContent: 'center', 
+				alignSelf: 'center', 
+
+				top: 0, 
+				width: '33%', 
+				borderWidth: 1, 
+				borderColor: colors.border, 
+				borderRadius: 6, 
+				marginVertical: 8,
+				backgroundColor: colors.surface,
+				padding: 8
+			}}>
+				<Text style={{ color: colors.text }}>{message.time}</Text>
 			</View>
 		)
 	}
@@ -110,16 +125,26 @@ export default function ChatBubble({ message, isGroup, roomId }: { message: Chat
 
 	return (
 		<>
-			<View className={(isSelf ? 'justify-end' : 'justify-start') + " flex my-2 flex-row w-full"}>
-				<View className='flex flex-col gap-1 w-[40%]'>
+			<View style={{ 
+				justifyContent: isSelf ? 'flex-end' : 'flex-start', 
+				flexDirection: 'row', 
+				marginVertical: 8, 
+				width: '100%' 
+			}}>
+				<View style={{ flexDirection: 'column', gap: 4, width: '40%' }}>
 					{
 						(!message.isConsecutiveMessage && (isGroup || isAIMessage)) && (
-							<View className={(isSelf ? 'flex-row-reverse' : "flex-row") + ' flex gap-2 items-center'}>
+							<View style={{ 
+								flexDirection: isSelf ? 'row-reverse' : 'row', 
+								flex: 1, 
+								gap: 8, 
+								alignItems: 'center' 
+							}}>
 								<Avatar.Image 
 									size={28} 
 									source={{ uri: isAIMessage ? 'https://ui-avatars.com/api/?name=AI&background=6366f1&color=ffffff' : message.userPhoto }} 
 								/>
-								<Text className='text-secondary-foreground'>
+								<Text style={{ color: colors.textSecondary }}>
 									{isAIMessage ? 'Chatify AI' : message.userName}
 								</Text>
 								{isAIMessage && (
@@ -138,24 +163,34 @@ export default function ChatBubble({ message, isGroup, roomId }: { message: Chat
 								onLongPress={openMenu}
 								delayLongPress={500}
 							>
-								<View className={(isSelf
-									? (message.isConsecutiveMessage
-										? 'bg-primary mr-5' :
-										'bg-primary mr-5 rounded-tr-none') :
-									isAIMessage
-										? (message.isConsecutiveMessage
-											? 'bg-purple-100 ml-5 border border-purple-200' :
-											'bg-purple-100 ml-5 rounded-tl-none border border-purple-200')
-										: (message.isConsecutiveMessage
-											? 'bg-slate-200 ml-5' :
-											'bg-slate-200 ml-5 rounded-tl-none'))
-									+ " py-2 px-4 rounded-md"}>
+								<View style={{
+									backgroundColor: isSelf
+										? '#3b82f6' // Primary blue for self messages
+										: isAIMessage
+											? '#f3f4f6' // Light gray for AI messages
+											: colors.surface, // Theme surface for other messages
+									marginRight: isSelf ? 20 : 0,
+									marginLeft: isSelf ? 0 : 20,
+									borderTopRightRadius: isSelf && !message.isConsecutiveMessage ? 0 : 6,
+									borderTopLeftRadius: !isSelf && !message.isConsecutiveMessage ? 0 : 6,
+									borderRadius: 6,
+									paddingVertical: 8,
+									paddingHorizontal: 16,
+									borderWidth: isAIMessage ? 1 : 0,
+									borderColor: isAIMessage ? colors.border : 'transparent'
+								}}>
 									
 									{/* Image */}
 									{message.type === 'image' && (
 										<Image 
 											source={{ uri: message.chatInfo }}
-											style={{ width: 200, height: 200, borderRadius: 8, marginBottom: 4 }}
+											style={{ 
+												width: '100%', 
+												maxWidth: 250, 
+												height: 200, 
+												borderRadius: 8, 
+												marginBottom: 4 
+											}}
 											resizeMode="cover"
 										/>
 									)}
@@ -163,22 +198,50 @@ export default function ChatBubble({ message, isGroup, roomId }: { message: Chat
 									{/* File attachment */}
 									{message.type === 'file' && (
 										<Pressable onPress={() => Linking.openURL(message.chatInfo)}>
-											<View className='flex flex-row items-center gap-2 p-2 bg-white/20 rounded'>
+											<View style={{ 
+												flexDirection: 'row', 
+												alignItems: 'center', 
+												gap: 8, 
+												padding: 8, 
+												backgroundColor: isSelf ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)', 
+												borderRadius: 6 
+											}}>
 												<Avatar.Icon size={36} icon="file-document" />
-												<View className='flex-1'>
-													<Text className='font-medium'>{message.fileName || 'Document'}</Text>
-													<Text className='text-xs opacity-70'>Tap to open</Text>
+												<View style={{ flex: 1 }}>
+													<Text style={{ 
+														fontWeight: '500', 
+														color: isSelf ? 'white' : colors.text 
+													}}>{message.fileName || 'Document'}</Text>
+													<Text style={{ 
+														fontSize: 10, 
+														opacity: 0.7, 
+														color: isSelf ? 'white' : colors.textSecondary 
+													}}>Tap to open</Text>
 												</View>
 											</View>
 										</Pressable>
 									)}
 									
 									{/* Text message */}
-									{message.type === 'text' && <Text>{message.chatInfo}</Text>}
+									{message.type === 'text' && (
+										<Text style={{ 
+											color: isSelf ? 'white' : colors.text 
+										}}>{message.chatInfo}</Text>
+									)}
 									
-									<View className='flex flex-row items-center gap-1'>
-										<Text className='opacity-65 text-[10px]'>{time}</Text>
-										{message.isMsgEdited && <Text className='opacity-65 text-[10px]'>(edited)</Text>}
+									<View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+										<Text style={{ 
+											opacity: 0.65, 
+											fontSize: 10, 
+											color: isSelf ? 'white' : colors.textSecondary 
+										}}>{time}</Text>
+										{message.isMsgEdited && (
+											<Text style={{ 
+												opacity: 0.65, 
+												fontSize: 10, 
+												color: isSelf ? 'white' : colors.textSecondary 
+											}}>(edited)</Text>
+										)}
 									</View>
 								</View>
 							</Pressable>
@@ -191,7 +254,13 @@ export default function ChatBubble({ message, isGroup, roomId }: { message: Chat
 					
 					{/* Display reactions */}
 					{!message.isDate && (message as ChatMessage).reactions && (message as ChatMessage).reactions!.length > 0 && (
-						<View className='flex flex-row flex-wrap gap-1 mt-1 ml-5'>
+						<View style={{ 
+							flexDirection: 'row', 
+							flexWrap: 'wrap', 
+							gap: 4, 
+							marginTop: 4, 
+							marginLeft: 20 
+						}}>
 							{(message as ChatMessage).reactions!.map((reaction: any, index: number) => {
 								const hasUserReacted = reaction.reactors.some((r: any) => r.uid === user?.uid);
 								return (
@@ -250,10 +319,19 @@ export default function ChatBubble({ message, isGroup, roomId }: { message: Chat
 				<Dialog visible={emojiPickerVisible} onDismiss={() => setEmojiPickerVisible(false)}>
 					<Dialog.Title>React with Emoji</Dialog.Title>
 					<Dialog.Content>
-						<View className='flex flex-row flex-wrap gap-2 justify-center'>
+						<View style={{ 
+							flexDirection: 'row', 
+							flexWrap: 'wrap', 
+							gap: 8, 
+							justifyContent: 'center' 
+						}}>
 							{commonEmojis.map((emoji, index) => (
 								<Pressable key={index} onPress={() => handleEmojiSelect(emoji)}>
-									<View className='p-3 bg-slate-100 rounded-lg'>
+									<View style={{ 
+										padding: 12, 
+										backgroundColor: colors.surface, 
+										borderRadius: 8 
+									}}>
 										<Text style={{ fontSize: 32 }}>{emoji}</Text>
 									</View>
 								</Pressable>

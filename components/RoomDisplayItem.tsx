@@ -6,10 +6,12 @@ import { useUser } from '~/app/providers';
 import { TRoomData } from '~/lib/types'
 import { setActiveRoomId } from '~/redux/chatSlice';
 import { useAppDispatch, useAppSelector } from '~/redux/store';
+import { useTheme } from '~/lib/themeContext';
 
 export default function RoomDisplayItem({ roomData }: { roomData: TRoomData }) {
 	const dispatch = useAppDispatch();
 	const {	user } = useUser();
+	const { colors } = useTheme();
 	const rooms = useAppSelector(state => state.chat.rooms);
 
 	function changeActiveRoom() {
@@ -71,7 +73,7 @@ export default function RoomDisplayItem({ roomData }: { roomData: TRoomData }) {
 		<Card 
 			onPress={changeActiveRoom}
 			style={isAIRoom ? { 
-				backgroundColor: '#f8fafc', 
+				backgroundColor: colors.surface, 
 				borderLeftWidth: 4, 
 				borderLeftColor: '#6366f1',
 				shadowColor: '#6366f1',
@@ -80,6 +82,7 @@ export default function RoomDisplayItem({ roomData }: { roomData: TRoomData }) {
 				shadowRadius: 4,
 				elevation: 3
 			} : {
+				backgroundColor: colors.surface,
 				shadowColor: '#000',
 				shadowOffset: { width: 0, height: 1 },
 				shadowOpacity: 0.1,
@@ -97,7 +100,7 @@ export default function RoomDisplayItem({ roomData }: { roomData: TRoomData }) {
 								? 'https://ui-avatars.com/api/?name=AI&background=6366f1&color=ffffff' 
 								: roomData.photo_url 
 						}}
-						style={{ borderWidth: 2, borderColor: isAIRoom ? '#6366f1' : '#e5e7eb' }}
+						style={{ borderWidth: 2, borderColor: isAIRoom ? '#6366f1' : colors.border }}
 					/>
 					{isAIRoom && (
 						<View className="absolute -bottom-1 -right-1 bg-purple-500 rounded-full w-6 h-6 items-center justify-center">
@@ -107,21 +110,43 @@ export default function RoomDisplayItem({ roomData }: { roomData: TRoomData }) {
 				</View>
 				<View className="flex-1">
 					<View className="flex-row items-center gap-2 mb-1">
-						<Text variant='titleMedium' className="font-semibold text-gray-900">
+						<Text style={{ 
+							fontSize: 16, 
+							fontWeight: '600', 
+							color: colors.text 
+						}}>
 							{roomData.name}
 						</Text>
 						{isAIRoom && (
-							<View className="bg-purple-100 px-2 py-1 rounded-full">
-								<Text className="text-purple-700 text-xs font-medium">AI Assistant</Text>
+							<View style={{ 
+								backgroundColor: colors.surface, 
+								paddingHorizontal: 8, 
+								paddingVertical: 4, 
+								borderRadius: 12,
+								borderWidth: 1,
+								borderColor: colors.border
+							}}>
+								<Text style={{ 
+									color: '#8b5cf6', 
+									fontSize: 10, 
+									fontWeight: '500' 
+								}}>AI Assistant</Text>
 							</View>
 						)}
 					</View>
-					<Text variant='bodyMedium' className="text-gray-600" numberOfLines={2}>
+					<Text style={{ 
+						fontSize: 14, 
+						color: colors.textSecondary,
+						numberOfLines: 2 
+					}}>
 						{getLastMessage()}
 					</Text>
 				</View>
 				<View className="items-end">
-					<Text variant="bodySmall" className="text-gray-400">
+					<Text style={{ 
+						fontSize: 12, 
+						color: colors.textSecondary 
+					}}>
 						{getLastMessageTime()}
 					</Text>
 				</View>

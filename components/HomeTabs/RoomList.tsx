@@ -5,9 +5,11 @@ import { Icon, Searchbar, IconButton, FAB, Button } from 'react-native-paper'
 import RoomDisplayItem from '../RoomDisplayItem'
 import GroupChat from '../GroupChat'
 import { useUser } from '~/app/providers'
+import { useTheme } from '~/lib/themeContext'
 
 export default function RoomList() {
 	const { user } = useUser();
+	const { colors } = useTheme();
 	const [searchQuery, setSearchQuery] = useState('');
 	const [showCreateGroup, setShowCreateGroup] = useState(false);
 
@@ -30,17 +32,32 @@ export default function RoomList() {
 
 	const renderEmptyState = () => (
 		<View className="justify-center items-center px-8 py-16 mt-10">
-			<View className="w-24 h-24 bg-blue-100 rounded-full items-center justify-center mb-6">
+			<View style={{ 
+				width: 96, 
+				height: 96, 
+				backgroundColor: colors.surface, 
+				borderRadius: 48, 
+				alignItems: 'center', 
+				justifyContent: 'center', 
+				marginBottom: 24 
+			}}>
 				<Icon source="chat" size={48} color="#3b82f6" />
 			</View>
-			<Text className="text-xl font-bold text-center mb-2">
+			<Text style={{ fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 8, color: colors.text }}>
 				No Chats Yet
 			</Text>
-			<Text className="text-gray-500 text-center mb-6">
+			<Text style={{ color: colors.textSecondary, textAlign: 'center', marginBottom: 24 }}>
 				Start a conversation by adding friends or creating a group chat
 			</Text>
-			<View className="bg-blue-50 rounded-xl p-4 border border-blue-200 mb-4">
-				<Text className="text-blue-700 text-center font-medium">
+			<View style={{ 
+				backgroundColor: colors.surface, 
+				borderRadius: 12, 
+				padding: 16, 
+				borderWidth: 1, 
+				borderColor: colors.border, 
+				marginBottom: 16 
+			}}>
+				<Text style={{ color: '#3b82f6', textAlign: 'center', fontWeight: '500' }}>
 					💡 Go to Friends tab to add new friends and start chatting!
 				</Text>
 			</View>
@@ -56,36 +73,49 @@ export default function RoomList() {
 	);
 
 	return (
-		<SafeAreaView style={{ flex: 1, backgroundColor: '#f9fafb' }}>
-			<View style={{ paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' }}>
+		<SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+			<View style={{ 
+				paddingHorizontal: 16, 
+				paddingVertical: 16, 
+				borderBottomWidth: 1, 
+				borderBottomColor: colors.border 
+			}}>
 				<View className="flex-row items-center justify-between mb-4">
-					<Text className="text-2xl font-bold text-gray-900">
+					<Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.text }}>
 						Chats
 					</Text>
 				</View>
 				
 				<View className="flex-row items-center gap-3 mb-2">
-					<View className="flex-1 bg-gray-100 rounded-full px-4 py-2 border border-gray-200">
+					<View style={{ 
+						flex: 1, 
+						backgroundColor: colors.surface, 
+						borderRadius: 20, 
+						paddingHorizontal: 16, 
+						paddingVertical: 8, 
+						borderWidth: 1, 
+						borderColor: colors.border 
+					}}>
 						<Searchbar 
 							placeholder="Search conversations..." 
 							value={searchQuery} 
 							onChangeText={setSearchQuery}
 							style={{ backgroundColor: 'transparent', elevation: 0 }}
-							placeholderTextColor="#9ca3af"
+							placeholderTextColor={colors.textSecondary}
 						/>
 					</View>
 					{searchQuery.length > 0 && (
 						<IconButton
 							icon="close"
 							size={20}
-							iconColor="#6b7280"
+							iconColor={colors.textSecondary}
 							onPress={() => setSearchQuery('')}
-							style={{ backgroundColor: '#f3f4f6' }}
+							style={{ backgroundColor: colors.surface }}
 						/>
 					)}
 				</View>
 				
-				<Text className="text-gray-500">
+				<Text style={{ color: colors.textSecondary }}>
 					{searchQuery ? `${filteredRooms.length} results` : `${user?.rooms?.length || 0} conversations`}
 				</Text>
 			</View>
@@ -102,13 +132,27 @@ export default function RoomList() {
 				if (roomsToShow.length === 0 && searchQuery) {
 					return (
 						<View className="flex-1 justify-center items-center px-8 py-16">
-							<View className="w-20 h-20 bg-gray-100 rounded-full items-center justify-center mb-4">
-								<Icon source="magnify" size={40} color="#9ca3af" />
+							<View style={{ 
+								width: 80, 
+								height: 80, 
+								backgroundColor: colors.surface, 
+								borderRadius: 40, 
+								alignItems: 'center', 
+								justifyContent: 'center', 
+								marginBottom: 16 
+							}}>
+								<Icon source="magnify" size={40} color={colors.textSecondary} />
 							</View>
-							<Text className="text-lg font-semibold text-gray-600 text-center mb-2">
+							<Text style={{ 
+								fontSize: 18, 
+								fontWeight: '600', 
+								color: colors.textSecondary, 
+								textAlign: 'center', 
+								marginBottom: 8 
+							}}>
 								No Results Found
 							</Text>
-							<Text className="text-gray-500 text-center">
+							<Text style={{ color: colors.textSecondary, textAlign: 'center' }}>
 								Try searching with different keywords
 							</Text>
 						</View>

@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { offlineStorage } from '../lib/offlineStorage';
 import NetInfo from '@react-native-community/netinfo';
+import { ThemeProvider } from '../lib/themeContext';
 
 
 type TUserContext = {
@@ -126,7 +127,7 @@ export function Providers({ children }: { children: ReactNode }) {
 		
 		try {
 			// Try online logout first
-			await customFetch({ pathName: 'session' });
+			await customFetch({ pathName: 'session', method: 'DELETE' });
 			console.log('Logged out online');
 		} catch (error) {
 			console.error('Online logout failed:', error);
@@ -150,13 +151,15 @@ export function Providers({ children }: { children: ReactNode }) {
 
 	return (
 		<SafeAreaProvider>
-			<UserContext.Provider value={{ user, login, logout, isLoading, isLoggingOut, isOffline, updateUser, loginOffline }}>
-				<ReduxProvider>
-					<PaperProvider theme={theme}>
-						{children}
-					</PaperProvider>
-				</ReduxProvider>
-			</UserContext.Provider>
+			<ThemeProvider>
+				<UserContext.Provider value={{ user, login, logout, isLoading, isLoggingOut, isOffline, updateUser, loginOffline }}>
+					<ReduxProvider>
+						<PaperProvider theme={theme}>
+							{children}
+						</PaperProvider>
+					</ReduxProvider>
+				</UserContext.Provider>
+			</ThemeProvider>
 		</SafeAreaProvider>
 	)
 

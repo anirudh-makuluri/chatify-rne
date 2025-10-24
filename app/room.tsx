@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { uploadFile } from '~/lib/utils';
+import { useTheme as useAppTheme } from '~/lib/themeContext';
 
 export default function Room() {
 	const activeChatRoomId = useAppSelector(state => state.chat.activeChatRoomId);
@@ -24,6 +25,7 @@ export default function Room() {
 	const textInputRef = useRef<any>(null); //Fix this
 
 	const dispatch = useAppDispatch();
+	const { colors } = useAppTheme();
 
 	const { user, isOffline: userIsOffline } = useUser() || {};
 
@@ -367,35 +369,42 @@ export default function Room() {
 	};
 
 	return (
-		<SafeAreaView>
-			<View className='w-full h-full'>
-				<View className='px-2 py-4 bg-slate-200 flex flex-row justify-between items-center'>
-					<View className='flex flex-row items-center flex-1'>
-						<Button onPress={handleBackButton} mode='text' className='flex flex-row justify-center items-center'>
+		<SafeAreaView style={{ backgroundColor: colors.background }}>
+			<View style={{ width: '100%', height: '100%', backgroundColor: colors.background }}>
+				<View style={{ 
+					paddingHorizontal: 8, 
+					paddingVertical: 16, 
+					backgroundColor: colors.surface, 
+					flexDirection: 'row', 
+					justifyContent: 'space-between', 
+					alignItems: 'center' 
+				}}>
+					<View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+						<Button onPress={handleBackButton} mode='text' style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
 							<Icon source={'chevron-left'} size={28} />
 						</Button>
-						<View className='flex-row items-center flex-1'>
-							<Avatar.Image size={48} className='mr-2' source={{ uri: activeRoom?.photo_url }} />
-							<View className='flex-1'>
-								<View className='flex-row items-center'>
-									<Text className='font-semibold'>{activeRoom.name}</Text>
+						<View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+							<Avatar.Image size={48} style={{ marginRight: 8 }} source={{ uri: activeRoom?.photo_url }} />
+							<View style={{ flex: 1 }}>
+								<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+									<Text style={{ fontWeight: '600', color: colors.text }}>{activeRoom.name}</Text>
 									{userIsOffline && (
 										<Chip 
 											icon="wifi-off" 
-											className='ml-2 bg-orange-100'
-											textStyle={{ fontSize: 10 }}
+											style={{ marginLeft: 8, backgroundColor: colors.surface }}
+											textStyle={{ fontSize: 10, color: colors.text }}
 										>
 											Offline
 										</Chip>
 									)}
 								</View>
 								{activeRoom.is_group ? (
-									<Text className='text-sm text-gray-600'>
+									<Text style={{ fontSize: 14, color: colors.textSecondary }}>
 										{activeRoom.members?.length || 0} members
 									</Text>
 								) : (
-									<View className='flex-row items-center'>
-										<Text className='text-sm text-gray-600'>
+									<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+										<Text style={{ fontSize: 14, color: colors.textSecondary }}>
 											{getUserPresence()}
 										</Text>
 									</View>
@@ -404,22 +413,25 @@ export default function Room() {
 						</View>
 					</View>
 					
-					<View className='flex-row items-center'>
+					<View style={{ flexDirection: 'row', alignItems: 'center' }}>
 						{activeRoom.is_group && (
 							<IconButton
 								icon="account-multiple"
 								size={24}
+								iconColor={colors.text}
 								onPress={() => setShowGroupMembers(true)}
 							/>
 						)}
 						<IconButton
 							icon="clock-outline"
 							size={24}
+							iconColor={colors.text}
 							onPress={() => setShowScheduledMessages(true)}
 						/>
 						<IconButton
 							icon="clock-plus"
 							size={24}
+							iconColor={colors.text}
 							onPress={() => setShowScheduleDialog(true)}
 						/>
 						<Menu
@@ -429,6 +441,7 @@ export default function Room() {
 								<IconButton
 									icon="robot"
 									size={24}
+									iconColor={colors.text}
 									onPress={() => setAiMenuVisible(true)}
 								/>
 							}
@@ -449,27 +462,38 @@ export default function Room() {
 			
 			{/* Upload Progress */}
 			{uploading && (
-				<View className='px-4 py-2 bg-slate-100'>
-					<Text className='text-sm mb-1'>Uploading...</Text>
+				<View style={{ 
+					paddingHorizontal: 16, 
+					paddingVertical: 8, 
+					backgroundColor: colors.surface 
+				}}>
+					<Text style={{ fontSize: 14, color: colors.text, marginBottom: 4 }}>Uploading...</Text>
 					<ProgressBar progress={uploadProgress} />
 				</View>
 			)}
 
 			{/* Smart Replies */}
 			{showSmartReplies && (
-				<View className='px-4 py-2 bg-blue-50 border-t border-blue-200'>
-					<View className='flex-row items-center justify-between mb-2'>
-						<Text variant='bodySmall' className='text-blue-700'>
+				<View style={{ 
+					paddingHorizontal: 16, 
+					paddingVertical: 8, 
+					backgroundColor: colors.surface, 
+					borderTopWidth: 1, 
+					borderTopColor: colors.border 
+				}}>
+					<View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+						<Text style={{ fontSize: 12, color: colors.text }}>
 							Smart replies for: "{testMessage}"
 						</Text>
 						<IconButton
 							icon="close"
 							size={16}
+							iconColor={colors.textSecondary}
 							onPress={() => setShowSmartReplies(false)}
 						/>
 					</View>
 					{smartReplies.length > 0 ? (
-						<View className='flex-row flex-wrap gap-2'>
+						<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
 							{smartReplies.map((reply, index) => (
 								<Button
 									key={index}
@@ -486,9 +510,9 @@ export default function Room() {
 							))}
 						</View>
 					) : (
-						<View className='flex-row items-center gap-2'>
+						<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
 							<ActivityIndicator size="small" />
-							<Text variant='bodySmall' className='text-blue-600'>
+							<Text style={{ fontSize: 12, color: colors.textSecondary }}>
 								Generating smart replies...
 							</Text>
 						</View>
@@ -498,17 +522,35 @@ export default function Room() {
 			
 			{/* Offline message indicator */}
 			{userIsOffline && (
-				<View className='px-4 py-2 bg-orange-50 border-t border-orange-200'>
-					<View className='flex-row items-center'>
+				<View style={{ 
+					paddingHorizontal: 16, 
+					paddingVertical: 8, 
+					backgroundColor: colors.surface, 
+					borderTopWidth: 1, 
+					borderTopColor: colors.border 
+				}}>
+					<View style={{ flexDirection: 'row', alignItems: 'center' }}>
 						<Icon source="wifi-off" size={16} color='#ea580c' />
-						<Text variant='bodySmall' className='text-orange-700 flex-1 ml-2'>
+						<Text style={{ 
+							fontSize: 12, 
+							color: '#ea580c', 
+							flex: 1, 
+							marginLeft: 8 
+						}}>
 							You're offline. Messages will be sent when connection is restored.
 						</Text>
 					</View>
 				</View>
 			)}
 
-			<View className='flex flex-row items-center w-full gap-2 p-2'>
+			<View style={{ 
+				flexDirection: 'row', 
+				alignItems: 'center', 
+				width: '100%', 
+				gap: 8, 
+				padding: 8,
+				backgroundColor: colors.surface
+			}}>
 				<Menu
 					visible={attachMenuVisible}
 					onDismiss={() => setAttachMenuVisible(false)}
@@ -516,6 +558,7 @@ export default function Room() {
 						<IconButton
 							icon="attachment"
 							size={24}
+							iconColor={colors.text}
 							onPress={() => setAttachMenuVisible(true)}
 							disabled={uploading || userIsOffline}
 						/>
@@ -544,6 +587,7 @@ export default function Room() {
 				<IconButton
 					icon="send"
 					size={24}
+					iconColor={colors.text}
 					onPress={sendMessage}
 					disabled={uploading || !input.trim()}
 				/>

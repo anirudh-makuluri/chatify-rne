@@ -21,6 +21,7 @@ import { useAppDispatch, useAppSelector } from '~/redux/store';
 import { createGroupService, addMembersToGroupService, removeMemberFromGroupService, updateGroupInfoService, deleteGroupService } from '~/lib/groupService';
 import { updateGroupMembers, updateGroupInfo, removeGroupRoom, setActiveRoomId } from '~/redux/chatSlice';
 import { router } from 'expo-router';
+import { useTheme } from '~/lib/themeContext';
 
 interface GroupChatProps {
 	roomId?: string;
@@ -29,6 +30,7 @@ interface GroupChatProps {
 
 export default function GroupChat({ roomId, onClose }: GroupChatProps) {
 	const { user, updateUser } = useUser();
+	const { colors } = useTheme();
 	const dispatch = useAppDispatch();
 	const activeRoom = useAppSelector(state => state.chat.rooms[roomId || '']);
 	
@@ -264,7 +266,7 @@ export default function GroupChat({ roomId, onClose }: GroupChatProps) {
 				visible={true}
 				onDismiss={onClose}
 				contentContainerStyle={{
-					backgroundColor: 'white',
+					backgroundColor: colors.surface,
 					margin: 20,
 					borderRadius: 16,
 					maxHeight: '90%',
@@ -272,21 +274,37 @@ export default function GroupChat({ roomId, onClose }: GroupChatProps) {
 				}}
 			>
 				<SafeAreaView style={{ flex: 1 }}>
-					<View className="flex-row items-center justify-between p-4 border-b border-gray-200">
-						<Text variant="headlineSmall" className="font-bold">
+					<View style={{ 
+						flexDirection: 'row', 
+						alignItems: 'center', 
+						justifyContent: 'space-between', 
+						padding: 16, 
+						borderBottomWidth: 1, 
+						borderBottomColor: colors.border 
+					}}>
+						<Text style={{ 
+							fontSize: 20, 
+							fontWeight: 'bold', 
+							color: colors.text 
+						}}>
 							{isEditMode ? 'Edit Group' : 'Create Group'}
 						</Text>
 						<IconButton
 							icon="close"
 							onPress={onClose}
-							iconColor="#6b7280"
+							iconColor={colors.textSecondary}
 						/>
 					</View>
 
 					<ScrollView className="flex-1 p-4" showsVerticalScrollIndicator={false}>
 						{/* Group Name */}
 						<View className="mb-6">
-							<Text variant="titleMedium" className="mb-2 font-semibold">
+							<Text style={{ 
+								fontSize: 16, 
+								fontWeight: '600', 
+								color: colors.text, 
+								marginBottom: 8 
+							}}>
 								Group Name
 							</Text>
 							<TextInput
@@ -302,7 +320,11 @@ export default function GroupChat({ roomId, onClose }: GroupChatProps) {
 						{isEditMode && (
 							<View className="mb-6">
 								<View className="flex-row items-center justify-between mb-3">
-									<Text variant="titleMedium" className="font-semibold">
+									<Text style={{ 
+										fontSize: 16, 
+										fontWeight: '600', 
+										color: colors.text 
+									}}>
 										Group Members ({groupMembers.length})
 									</Text>
 									<Button
@@ -317,13 +339,20 @@ export default function GroupChat({ roomId, onClose }: GroupChatProps) {
 
 								<View className="flex-row flex-wrap gap-2">
 									{groupMembers.map(uid => (
-										<Card key={uid} className="p-2 mb-2">
+										<Card key={uid} style={{ 
+											padding: 8, 
+											marginBottom: 8, 
+											backgroundColor: colors.surface 
+										}}>
 											<View className="flex-row items-center gap-2">
 												<Avatar.Image 
 													size={32} 
 													source={{ uri: getMemberPhoto(uid) }} 
 												/>
-												<Text className="flex-1">{getMemberName(uid)}</Text>
+												<Text style={{ 
+													flex: 1, 
+													color: colors.text 
+												}}>{getMemberName(uid)}</Text>
 												<IconButton
 													icon="close"
 													size={16}
@@ -341,7 +370,11 @@ export default function GroupChat({ roomId, onClose }: GroupChatProps) {
 						{!isEditMode && (
 							<View className="mb-6">
 								<View className="flex-row items-center justify-between mb-3">
-									<Text variant="titleMedium" className="font-semibold">
+									<Text style={{ 
+										fontSize: 16, 
+										fontWeight: '600', 
+										color: colors.text 
+									}}>
 										Selected Members ({selectedMembers.length})
 									</Text>
 									<Button
@@ -409,7 +442,7 @@ export default function GroupChat({ roomId, onClose }: GroupChatProps) {
 						visible={showMemberSearch}
 						onDismiss={() => setShowMemberSearch(false)}
 						contentContainerStyle={{
-							backgroundColor: 'white',
+							backgroundColor: colors.surface,
 							margin: 20,
 							borderRadius: 16,
 							maxHeight: '80%'
@@ -417,13 +450,17 @@ export default function GroupChat({ roomId, onClose }: GroupChatProps) {
 					>
 						<View className="p-4">
 							<View className="flex-row items-center justify-between mb-4">
-								<Text variant="headlineSmall" className="font-bold">
+								<Text style={{ 
+									fontSize: 20, 
+									fontWeight: 'bold', 
+									color: colors.text 
+								}}>
 									Add Members
 								</Text>
 								<IconButton
 									icon="close"
 									onPress={() => setShowMemberSearch(false)}
-									iconColor="#6b7280"
+									iconColor={colors.textSecondary}
 								/>
 							</View>
 
@@ -439,7 +476,10 @@ export default function GroupChat({ roomId, onClose }: GroupChatProps) {
 								{availableFriends.map(friend => (
 									<Card
 										key={friend.uid}
-										className="mb-2"
+										style={{ 
+											marginBottom: 8, 
+											backgroundColor: colors.surface 
+										}}
 										onPress={() => toggleMemberSelection(friend.uid)}
 									>
 										<View className="flex-row items-center p-3">
@@ -448,8 +488,15 @@ export default function GroupChat({ roomId, onClose }: GroupChatProps) {
 												source={{ uri: friend.photo_url }} 
 											/>
 											<View className="flex-1 ml-3">
-												<Text variant="titleMedium">{friend.name}</Text>
-												<Text variant="bodySmall" className="text-gray-500">
+												<Text style={{ 
+													fontSize: 16, 
+													fontWeight: '500', 
+													color: colors.text 
+												}}>{friend.name}</Text>
+												<Text style={{ 
+													fontSize: 12, 
+													color: colors.textSecondary 
+												}}>
 													{friend.email}
 												</Text>
 											</View>
